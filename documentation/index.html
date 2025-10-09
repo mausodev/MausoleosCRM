@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <title>Documentation - Horizon - Documentation </title>
+    <!-- Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,400i,700,700i&display=swap" rel="stylesheet">
+
+    <link rel="shortcut icon" href="assets/images/favicon.svg" />
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+    <!-- Prism CSS -->
+    <link rel="stylesheet" href="assets/css/prism/prism.css">
+
+    <!-- Main CSS -->
+    <link id="theme-style" rel="stylesheet" href="assets/css/main.css">
+
+  </head>
+
+  <body>
+
+
+    <!-- Document header start -->
+    <div id="document-header" class="document-header">
+      <h2 class="document-title">Horizon - Documentation</h2>
+      <div class="last-update">Last updated: February, 2024</div>
+    </div>
+    <!-- Document header end -->
+
+    <div class="container">
+
+      <!-- Document container start -->
+      <div class="document-container">
+
+        <!-- Document body start -->
+        <div class="document-body">
+
+          <!-- Document nav start -->
+          <div id="document-nav" class="document-nav">
+            <nav id="document-menu" class="nav document-menu sticky">
+              <a class="nav-link scrollto" href="#welcome-section">Introduction</a>
+              <a class="nav-link scrollto" href="#html-section">HTML structure</a>
+              <a class="nav-link scrollto" href="#css-files">CSS files</a>
+              <a class="nav-link scrollto" href="#scss-files">SCSS files</a>
+              <a class="nav-link scrollto" href="#images">Images</a>
+              <a class="nav-link scrollto" href="#fonts">Fonts</a>
+              <a class="nav-link scrollto" href="#credits">Credits</a>
+              <a class="nav-link scrollto" href="#jquery-files">jQuery files</a>
+            </nav>
+          </div>
+          <!-- Document nav end -->
+
+          <!-- Document sections start -->
+          <div class="document-sections-container">
+
+
+            <!-- Sectioon start -->
+            <section id="welcome-section" class="document-section">
+              <h2>Welcome!</h2>
+              <div id="step1" class="document-section-body">
+                <h3>Introduction</h3>
+                <p class="mb-5 mt-5">
+                  <b>Item Name: </b> Horizon Admin Template<br>
+                  <b>Author: </b> Bootstrap Gallery<br>
+                  <b>Version: </b> v1.0<br>
+                </p>
+                <p>Thank you for your interest in <b>Horizon Admin Template</b>. This documentation is to
+                  help you
+                  regarding each step of customization and get you started. Please go through the documentation
+                  Horizonfully to understand how this template is made and how to edit this properly. HTML5, CSS3
+                  knowledge
+                  is required to customize this template.
+                </p>
+
+                <p>Horizon Admin template contains unique features</b>.</p>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+            <!-- Sectioon start -->
+            <section id="html-section" class="document-section">
+              <h3 class="m-0">HTML layout structure</h3>
+
+              <div class="document-section-body">
+                <div class="code-block">
+                  <pre><code class="language-markup">Note:
+- For Default layout please refer stater-page.html
+
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+
+	&lt;head&gt;
+		&lt;meta charset="utf-8" /&gt;
+		&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;
+		&lt;title&gt;Bootstrap Gallery - Horizon Admin Template&lt;/title&gt;
+
+		&lt;!-- Meta --&gt;
+		&lt;meta name="description" content="Marketplace for Bootstrap Admin Dashboards" /&gt;
+		&lt;meta name="author" content="Bootstrap Gallery" /&gt;
+		&lt;link rel="shortcut icon" href="assets/images/favicon.svg" /&gt;
+
+		&lt;!-- *************
+			************ CSS Files *************
+		************* --&gt;
+		&lt;!-- Icomoon Font Icons css --&gt;
+		&lt;link rel="stylesheet" href="assets/fonts/icomoon/style.css" /&gt;
+
+		&lt;!-- Main CSS --&gt;
+		&lt;link rel="stylesheet" href="assets/css/main.min.css" /&gt;
+
+		&lt;!-- *************
+			************ Vendor Css Files *************
+		************ --&gt;
+
+		&lt;!-- Scrollbar CSS --&gt;
+		&lt;link rel="stylesheet" href="assets/vendor/overlay-scroll/OverlayScrollbars.min.css" /&gt;
+	&lt;/head&gt;
+
+	&lt;body&gt;
+
+		&lt;!-- Page wrapper start --&gt;
+		&lt;div class="page-wrapper"&gt;
+
+			&lt;!-- App container starts --&gt;
+			&lt;div class="app-container"&gt;
+
+				&lt;!-- App header starts --&gt;
+				&lt;div class="app-header d-flex align-items-center"&gt;
+
+					&lt;!-- Container starts --&gt;
+					&lt;div class="container"&gt;
+
+						&lt;!-- Row starts --&gt;
+						&lt;div class="row"&gt;
+							&lt;div class="col-md-3 col-2"&gt;
+
+								&lt;!-- App brand starts --&gt;
+								&lt;div class="app-brand"&gt;
+									&lt;a href="index.html" class="d-lg-block d-none"&gt;
+										&lt;img src="assets/images/logo.svg" class="logo" alt="Bootstrap Gallery" /&gt;
+									&lt;/a&gt;
+									&lt;a href="index.html" class="d-lg-none d-md-block"&gt;
+										&lt;img src="assets/images/logo-sm.svg" class="logo" alt="Bootstrap Gallery" /&gt;
+									&lt;/a&gt;
+								&lt;/div&gt;
+								&lt;!-- App brand ends --&gt;
+
+							&lt;/div&gt;
+
+							&lt;div class="col-md-9 col-10"&gt;
+								&lt;!-- App header actions start --&gt;
+								&lt;div class="header-actions d-flex align-items-center justify-content-end"&gt;
+
+									&lt;!-- Search container start --&gt;
+									&lt;div class="search-container d-none d-lg-block"&gt;
+										&lt;input type="text" class="form-control" placeholder="Search" /&gt;
+										&lt;i class="icon-search"&gt;&lt;/i&gt;
+									&lt;/div&gt;
+									&lt;!-- Search container end --&gt;
+
+									&lt;div class="dropdown"&gt;
+										&lt;a class="dropdown-toggle d-flex p-3 position-relative" href="#!" role="button"
+											data-bs-toggle="dropdown" aria-expanded="false"&gt;
+											&lt;img src="assets/images/flags/1x1/br.svg" class="flag-img" alt="Brazil" /&gt;
+										&lt;/a&gt;
+										&lt;div class="dropdown-menu dropdown-menu-end shadow-sm dropdown-menu-mini"&gt;
+											&lt;div class="country-container"&gt;
+												&lt;a href="index.html" class="py-2"&gt;
+													&lt;img src="assets/images/flags/1x1/us.svg" alt="USA" /&gt;
+												&lt;/a&gt;
+												&lt;a href="index.html" class="py-2"&gt;
+													&lt;img src="assets/images/flags/1x1/in.svg" alt="India" /&gt;
+												&lt;/a&gt;
+												&lt;a href="index.html" class="py-2"&gt;
+													&lt;img src="assets/images/flags/1x1/tr.svg" alt="Turkey" /&gt;
+												&lt;/a&gt;
+												&lt;a href="index.html" class="py-2"&gt;
+													&lt;img src="assets/images/flags/1x1/gb.svg" alt="Great Britain" /&gt;
+												&lt;/a&gt;
+												&lt;a href="index.html" class="py-2"&gt;
+													&lt;img src="assets/images/flags/1x1/id.svg" alt="Indonesia" /&gt;
+												&lt;/a&gt;
+											&lt;/div&gt;
+										&lt;/div&gt;
+									&lt;/div&gt;
+									&lt;div class="dropdown"&gt;
+										&lt;a class="dropdown-toggle d-flex p-3 position-relative" href="#!" role="button"
+											data-bs-toggle="dropdown" aria-expanded="false"&gt;
+											&lt;i class="icon-mail fs-4 lh-1"&gt;&lt;/i&gt;
+											&lt;span class="count rounded-circle bg-danger"&gt;9&lt;/span&gt;
+										&lt;/a&gt;
+										&lt;div class="dropdown-menu dropdown-menu-end dropdown-menu-md shadow-sm"&gt;
+											&lt;h5 class="fw-semibold px-3 py-2 m-0"&gt;Messages&lt;/h5&gt;
+											&lt;a href="javascript:void(0)" class="dropdown-item"&gt;
+												&lt;div class="d-flex align-items-start py-2"&gt;
+													&lt;div class="p-3 bg-danger rounded-circle me-3"&gt;
+														MS
+													&lt;/div&gt;
+													&lt;div class="m-0"&gt;
+														&lt;h6 class="mb-1 fw-semibold"&gt;Moory Sammy&lt;/h6&gt;
+														&lt;p class="mb-1"&gt;Sent a mail.&lt;/p&gt;
+														&lt;p class="small m-0 opacity-50"&gt;3 Mins Ago&lt;/p&gt;
+													&lt;/div&gt;
+												&lt;/div&gt;
+											&lt;/a&gt;
+											&lt;a href="javascript:void(0)" class="dropdown-item"&gt;
+												&lt;div class="d-flex align-items-start py-2"&gt;
+													&lt;div class="p-3 bg-primary rounded-circle me-3"&gt;
+														KY
+													&lt;/div&gt;
+													&lt;div class="m-0"&gt;
+														&lt;h6 class="mb-1 fw-semibold"&gt;Kyle Yomaha&lt;/h6&gt;
+														&lt;p class="mb-1"&gt;Need support.&lt;/p&gt;
+														&lt;p class="small m-0 opacity-50"&gt;5 Mins Ago&lt;/p&gt;
+													&lt;/div&gt;
+												&lt;/div&gt;
+											&lt;/a&gt;
+											&lt;a href="javascript:void(0)" class="dropdown-item"&gt;
+												&lt;div class="d-flex align-items-start py-2"&gt;
+													&lt;div class="p-3 bg-success rounded-circle me-3"&gt;
+														SB
+													&lt;/div&gt;
+													&lt;div class="m-0"&gt;
+														&lt;h6 class="mb-1 fw-semibold"&gt;Srinu Basava&lt;/h6&gt;
+														&lt;p class="mb-1"&gt;Purchased a NotePad.&lt;/p&gt;
+														&lt;p class="small m-0 opacity-50"&gt;7 Mins Ago&lt;/p&gt;
+													&lt;/div&gt;
+												&lt;/div&gt;
+											&lt;/a&gt;
+											&lt;div class="d-grid p-3 border-top"&gt;
+												&lt;a href="javascript:void(0)" class="btn btn-outline-primary"&gt;View all&lt;/a&gt;
+											&lt;/div&gt;
+										&lt;/div&gt;
+									&lt;/div&gt;
+									&lt;div class="dropdown"&gt;
+										&lt;a class="dropdown-toggle d-flex p-3 position-relative" href="#!" role="button"
+											data-bs-toggle="dropdown" aria-expanded="false"&gt;
+											&lt;i class="icon-twitch fs-4 lh-1"&gt;&lt;/i&gt;
+											&lt;span class="count rounded-circle bg-danger"&gt;5&lt;/span&gt;
+										&lt;/a&gt;
+										&lt;div class="dropdown-menu dropdown-menu-end dropdown-menu-md shadow-sm"&gt;
+											&lt;h5 class="fw-semibold px-3 py-2 m-0"&gt;Notifications&lt;/h5&gt;
+											&lt;a href="javascript:void(0)" class="dropdown-item"&gt;
+												&lt;div class="d-flex align-items-start py-2"&gt;
+													&lt;img src="assets/images/user.png" class="img-3x me-3 rounded-3" alt="Admin Themes" /&gt;
+													&lt;div class="m-0"&gt;
+														&lt;h6 class="mb-1 fw-semibold"&gt;Sophie Michiels&lt;/h6&gt;
+														&lt;p class="mb-1"&gt;Membership has been ended.&lt;/p&gt;
+														&lt;p class="small m-0 opacity-50"&gt;Today, 07:30pm&lt;/p&gt;
+													&lt;/div&gt;
+												&lt;/div&gt;
+											&lt;/a&gt;
+											&lt;a href="javascript:void(0)" class="dropdown-item"&gt;
+												&lt;div class="d-flex align-items-start py-2"&gt;
+													&lt;img src="assets/images/user2.png" class="img-3x me-3 rounded-3" alt="Admin Theme" /&gt;
+													&lt;div class="m-0"&gt;
+														&lt;h6 class="mb-1 fw-semibold"&gt;Sophie Michiels&lt;/h6&gt;
+														&lt;p class="mb-1"&gt;Congratulate, James for new job.&lt;/p&gt;
+														&lt;p class="small m-0 opacity-50"&gt;Today, 08:00pm&lt;/p&gt;
+													&lt;/div&gt;
+												&lt;/div&gt;
+											&lt;/a&gt;
+											&lt;a href="javascript:void(0)" class="dropdown-item"&gt;
+												&lt;div class="d-flex align-items-start py-2"&gt;
+													&lt;img src="assets/images/user1.png" class="img-3x me-3 rounded-3" alt="Admin Theme" /&gt;
+													&lt;div class="m-0"&gt;
+														&lt;h6 class="mb-1 fw-semibold"&gt;Sophie Michiels&lt;/h6&gt;
+														&lt;p class="mb-1"&gt;
+															Lewis added new schedule release.
+														&lt;/p&gt;
+														&lt;p class="small m-0 opacity-50"&gt;Today, 09:30pm&lt;/p&gt;
+													&lt;/div&gt;
+												&lt;/div&gt;
+											&lt;/a&gt;
+											&lt;div class="d-grid p-3 border-top"&gt;
+												&lt;a href="javascript:void(0)" class="btn btn-outline-primary"&gt;View all&lt;/a&gt;
+											&lt;/div&gt;
+										&lt;/div&gt;
+									&lt;/div&gt;
+									&lt;div class="dropdown ms-2"&gt;
+										&lt;a class="dropdown-toggle d-flex align-items-center user-settings" href="#!" role="button"
+											data-bs-toggle="dropdown" aria-expanded="false"&gt;
+											&lt;span class="d-none d-md-block"&gt;Violeta Escobar&lt;/span&gt;
+											&lt;img src="assets/images/user.png" class="img-3x m-2 me-0 rounded-5" alt="Bootstrap Gallery" /&gt;
+										&lt;/a&gt;
+										&lt;div class="dropdown-menu dropdown-menu-end dropdown-menu-sm shadow-sm gap-3" style=""&gt;
+											&lt;a class="dropdown-item d-flex align-items-center py-2" href="agent-profile.html"&gt;&lt;i
+													class="icon-smile fs-4 me-3"&gt;&lt;/i&gt;User Profile&lt;/a&gt;
+											&lt;a class="dropdown-item d-flex align-items-center py-2" href="account-settings.html"&gt;&lt;i
+													class="icon-settings fs-4 me-3"&gt;&lt;/i&gt;Account
+												Settings&lt;/a&gt;
+											&lt;a class="dropdown-item d-flex align-items-center py-2" href="login.php"&gt;&lt;i
+													class="icon-log-out fs-4 me-3"&gt;&lt;/i&gt;Logout&lt;/a&gt;
+										&lt;/div&gt;
+									&lt;/div&gt;
+
+									&lt;!-- Toggle Menu starts --&gt;
+									&lt;button class="btn btn-success btn-sm ms-3 d-lg-none d-md-block" type="button"
+										data-bs-toggle="offcanvas" data-bs-target="#MobileMenu"&gt;
+										&lt;i class="icon-menu"&gt;&lt;/i&gt;
+									&lt;/button&gt;
+									&lt;!-- Toggle Menu ends --&gt;
+
+								&lt;/div&gt;
+								&lt;!-- App header actions end --&gt;
+
+							&lt;/div&gt;
+						&lt;/div&gt;
+						&lt;!-- Row ends --&gt;
+
+					&lt;/div&gt;
+					&lt;!-- Container ends --&gt;
+
+				&lt;/div&gt;
+				&lt;!-- App header ends --&gt;
+
+				&lt;!-- App navbar starts --&gt;
+				&lt;nav class="navbar navbar-expand-lg p-0"&gt;
+					&lt;div class="container"&gt;
+						&lt;div class="offcanvas offcanvas-end" id="MobileMenu"&gt;
+							&lt;div class="offcanvas-header"&gt;
+								&lt;h5 class="offcanvas-title semibold"&gt;Navigation&lt;/h5&gt;
+								&lt;button type="button" class="btn btn-danger btn-sm" data-bs-dismiss="offcanvas"&gt;
+									&lt;i class="icon-clear"&gt;&lt;/i&gt;
+								&lt;/button&gt;
+							&lt;/div&gt;
+							&lt;ul class="navbar-nav me-auto mb-2 mb-lg-0"&gt;
+								&lt;li class="nav-item dropdown"&gt;
+									&lt;a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+										aria-expanded="false"&gt;
+										Dashboards
+									&lt;/a&gt;
+									&lt;ul class="dropdown-menu"&gt;
+										&lt;li&gt;
+											&lt;a class="dropdown-item" href="index.html"&gt;
+												&lt;span&gt;Analytics&lt;/span&gt;
+											&lt;/a&gt;
+										&lt;/li&gt;
+										&lt;li&gt;
+											&lt;a class="dropdown-item" href="reports.html"&gt;
+												&lt;span&gt;Reports&lt;/span&gt;
+											&lt;/a&gt;
+										&lt;/li&gt;
+									&lt;/ul&gt;
+								&lt;/li&gt;
+								&lt;li class="nav-item"&gt;
+									&lt;a class="nav-link" href="clients.html"&gt; Clients &lt;/a&gt;
+								&lt;/li&gt;
+								&lt;li class="nav-item dropdown active-link"&gt;
+									&lt;a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+										aria-expanded="false"&gt;
+										Pages
+									&lt;/a&gt;
+									&lt;ul class="dropdown-menu"&gt;
+										&lt;li&gt;
+											&lt;a class="dropdown-item" href="agent-profile.html"&gt;
+												&lt;span&gt;Agent Profile&lt;/span&gt;&lt;/a&gt;
+										&lt;/li&gt;
+										&lt;li&gt;
+											&lt;a class="dropdown-item current-page" href="starter-page.html"&gt;
+												&lt;span&gt;Starter Page&lt;/span&gt;&lt;/a&gt;
+										&lt;/li&gt;
+									&lt;/ul&gt;
+								&lt;/li&gt;
+								&lt;li class="nav-item dropdown"&gt;
+									&lt;a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+										aria-expanded="false"&gt;
+										UI Elements
+									&lt;/a&gt;
+									&lt;ul class="dropdown-menu mega-menu"&gt;
+										&lt;li&gt;
+											&lt;a class="dropdown-item" href="accordions.html"&gt;
+												&lt;span&gt;Accordions&lt;/span&gt;
+											&lt;/a&gt;
+										&lt;/li&gt;
+										&lt;li&gt;
+											&lt;a class="dropdown-item" href="alerts.html"&gt;
+												&lt;span&gt;Alerts&lt;/span&gt;
+											&lt;/a&gt;
+										&lt;/li&gt;
+										&lt;li&gt;
+											&lt;a class="dropdown-item" href="buttons.html"&gt;
+												&lt;span&gt;Buttons&lt;/span&gt;
+											&lt;/a&gt;
+										&lt;/li&gt;
+									&lt;/ul&gt;
+								&lt;/li&gt;
+							&lt;/ul&gt;
+						&lt;/div&gt;
+					&lt;/div&gt;
+				&lt;/nav&gt;
+				&lt;!-- App Navbar ends --&gt;
+
+				&lt;!-- App body starts --&gt;
+				&lt;div class="app-body"&gt;
+
+					&lt;!-- Container starts --&gt;
+					&lt;div class="container"&gt;
+
+						&lt;!-- Row start --&gt;
+						&lt;div class="row"&gt;
+							&lt;div class="col-12 col-xl-6"&gt;
+
+								&lt;!-- Breadcrumb start --&gt;
+								&lt;ol class="breadcrumb mb-3"&gt;
+									&lt;li class="breadcrumb-item"&gt;
+										&lt;i class="icon-house_siding lh-1"&gt;&lt;/i&gt;
+										&lt;a href="index.html" class="text-decoration-none"&gt;Home&lt;/a&gt;
+									&lt;/li&gt;
+									&lt;li class="breadcrumb-item"&gt;Pages&lt;/li&gt;
+									&lt;li class="breadcrumb-item text-light"&gt;Starter Page&lt;/li&gt;
+								&lt;/ol&gt;
+								&lt;!-- Breadcrumb end --&gt;
+							&lt;/div&gt;
+						&lt;/div&gt;
+						&lt;!-- Row end --&gt;
+
+						&lt;!-- Row start --&gt;
+						&lt;div class="row gx-2"&gt;
+							&lt;div class="col-12"&gt;
+								&lt;div class="card mb-2"&gt;
+									&lt;div class="card-header"&gt;
+										&lt;h5 class="card-title"&gt;Card Title&lt;/h5&gt;
+									&lt;/div&gt;
+									&lt;div class="card-body"&gt;
+										&lt;!-- Your code goes here --&gt;
+									&lt;/div&gt;
+								&lt;/div&gt;
+							&lt;/div&gt;
+						&lt;/div&gt;
+						&lt;!-- Row end --&gt;
+
+					&lt;/div&gt;
+					&lt;!-- Container ends --&gt;
+
+				&lt;/div&gt;
+				&lt;!-- App body ends --&gt;
+
+				&lt;!-- App footer start --&gt;
+				&lt;div class="app-footer"&gt;
+					&lt;div class="container"&gt;
+						&lt;span&gt;© Bootstrap Gallery 2023&lt;/span&gt;
+					&lt;/div&gt;
+				&lt;/div&gt;
+				&lt;!-- App footer end --&gt;
+
+			&lt;/div&gt;
+			&lt;!-- App container ends --&gt;
+
+		&lt;/div&gt;
+		&lt;!-- Page wrapper end --&gt;
+
+		&lt;!-- *************
+			************ JavaScript Files *************
+		************* --&gt;
+		&lt;!-- Required jQuery first, then Bootstrap Bundle JS --&gt;
+		&lt;script src="assets/js/jquery.min.js"&gt;&lt;/script&gt;
+		&lt;script src="assets/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
+
+		&lt;!-- *************
+			************ Vendor Js Files *************
+		************* --&gt;
+
+		&lt;!-- Overlay Scroll JS --&gt;
+		&lt;script src="assets/vendor/overlay-scroll/jquery.overlayScrollbars.min.js"&gt;&lt;/script&gt;
+		&lt;script src="assets/vendor/overlay-scroll/custom-scrollbar.js"&gt;&lt;/script&gt;
+
+		&lt;!-- Custom JS files --&gt;
+		&lt;script src="assets/js/custom.js"&gt;&lt;/script&gt;
+	&lt;/body&gt;
+
+&lt;/html&gt;
+
+</code></pre>
+                </div>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+            <!-- Sectioon start -->
+            <section id="css-files" class="document-section">
+              <h3 class="m-0">CSS files</h3>
+
+              <div class="document-section-body">
+                <div class="code-block">
+                  <pre><code class="language-markup">Note:
+- All common css files are included in assets/css folder.
+- All plugin css files are included in assets/vendor folder.
+
+
+&lt;!-- *************
+	************ Common Css Files *************
+************ --&gt;
+&lt;link rel="stylesheet" href="assets/fonts/bootstrap/bootstrap-icons.css" /&gt;
+&lt;link rel="stylesheet" href="assets/css/main.min.css" /&gt;
+&lt;link rel="stylesheet" href="assets/vendor/overlay-scroll/OverlayScrollbars.min.css" /&gt;
+
+&lt;!-- Calendar CSS --&gt;
+&lt;link rel="stylesheet" href="assets/vendor/calendar/css/main.min.css" /&gt;
+&lt;link rel="stylesheet" href="assets/vendor/calendar/css/custom.css" /&gt;
+
+&lt;!-- Date Range CSS --&gt;
+&lt;link rel="stylesheet" href="assets/vendor/daterange/daterange.css" /&gt;
+
+</code></pre>
+                </div>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+
+
+            <!-- Sectioon start -->
+            <section id="scss-files" class="document-section">
+              <h3 class="m-0">SCSS files</h3>
+
+              <div class="document-section-body">
+                <div class="code-block">
+                  <pre><code class="language-markup">Note:
+						- Main scss file is included in assets/css folder.
+
+						
+						SCSS Files --
+						
+							Multiple options to compile the SCSS files.
+						
+							Option 1. Compile SCSS files in Visual Studio Code -
+								Install the SCSS Extension.
+								Go to the Live Sass Compiler Extension page and hit the large green install button. ...
+								Open Your SCSS File.
+								Click on the “Watch Sass” Button in footer.
+								Complie will start.
+							
+							Option 2. Compile SCSS files using Terminal -
+								Go to folder.
+								Run the command '  sass --watch input.scss output.css  '
+								sass --watch input-filename.scss output-filename.css
+						
+						</code></pre>
+                </div>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+
+            <!-- Sectioon start -->
+            <section id="images" class="document-section">
+              <h3 class="m-0">Images</h3>
+
+              <div class="document-section-body">
+                <div class="code-block">
+                  <pre><code class="language-markup">Note:
+- All image placeholders are included in images folder.
+- Country Flags SVG images are included in flags folder.
+- Images which are used in the live demo are not included in the download folder.
+- Please replace the images as per your requirement.
+</code></pre>
+                </div>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+
+            <!-- Sectioon start -->
+            <section id="fonts" class="document-section">
+              <h3 class="m-0">Fonts</h3>
+
+              <div class="document-section-body">
+                <div class="code-block">
+                  <pre><code class="language-markup">Note:
+- Font icons files are included in fonts folder.
+- Open Sans is the primary font used in Horizon Admin Dashboard.</code></pre>
+                </div>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+
+            <!-- Sectioon start -->
+            <section id="credits" class="document-section">
+              <h3 class="m-0">Credits</h3>
+
+              <div class="document-section-body">
+                <div class="code-block">
+                  <pre><code class="language-markup">JavaScript Libraries
+---------------------
+--------------------
+-------------------
+------------------
+
+Bootstrap 4
+https://getbootstrap.com/
+
+jQuery 
+http://www.jquery.com
+
+
+
+JavaScript Plugins
+---------------------
+--------------------
+-------------------
+------------------
+
+Apex Graphs
+https://apexcharts.com/
+
+DataTables
+http://datatables.net/
+
+Daterange Picker
+http://www.daterangepicker.com/
+
+FullCalendar
+https://fullcalendar.io/
+
+jVector Maps
+http://jvectormap.com
+
+Moment
+http://momentjs.com/
+
+Morris
+https://morrisjs.github.io/morris.js/
+
+
+
+
+CSS Files 
+---------------------
+--------------------
+-------------------
+------------------
+
+Bootstrap
+http://getbootstrap.com
+
+Circliful
+https://github.com/pguso/jquery-plugin-circliful
+
+Calendar
+https://plugins.jquery.com/fullcalendar
+
+Data Tables
+https://datatables.net
+
+jQuery UI
+https://jqueryui.com
+
+
+
+
+
+
+
+Images
+---------------------
+--------------------
+-------------------
+------------------
+
+Unsplash
+http://unsplash.com
+
+Pexels
+https://pexels.com
+
+Pixabay
+http://pixabay.com
+
+
+
+
+
+
+Fonts
+---------------------
+--------------------
+-------------------
+------------------
+
+Icon Font
+https://fonts.google.com/
+
+</code></pre>
+                </div>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+
+            <!-- Sectioon start -->
+            <section id="jquery-files" class="document-section">
+              <h3 class="m-0">jQuery files</h3>
+
+              <div class="document-section-body">
+                <div class="code-block">
+                  <pre><code class="language-markup">Note:
+- All common js files are included in js folder.
+- All plugins js files are included in vendor folder.
+
+
+&lt;!-- *************
+	************ Required JavaScript Files *************
+************* --&gt;
+&lt;!-- Required jQuery first, then Bootstrap Bundle JS --&gt;
+&lt;script src="assets/js/jquery.min.js"&gt;&lt;/script&gt;
+&lt;script src="assets/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- *************
+************ Vendor Js Files *************
+************* --&gt;
+
+&lt;!-- Overlay Scroll JS --&gt;
+&lt;script src="assets/vendor/overlay-scroll/jquery.overlayScrollbars.min.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/overlay-scroll/custom-scrollbar.js"&gt;&lt;/script&gt;
+
+&lt;!-- Apex Charts --&gt;
+&lt;script src="assets/vendor/apex/apexcharts.min.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/area.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/line.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/bar.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/column-area.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/candlestick.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/heatmap.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/donut.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/apex/custom/graphs/pie.js"&gt;&lt;/script&gt;
+
+&lt;!-- Calendar JS --&gt;
+&lt;script src="assets/vendor/calendar/js/main.min.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/calendar/custom/daygrid-calendar.js"&gt;&lt;/script&gt;
+
+&lt;!-- Date Range JS --&gt;
+&lt;script src="assets/vendor/daterange/daterange.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/daterange/custom-daterange.js"&gt;&lt;/script&gt;
+
+&lt;!-- Vector Maps --&gt;
+&lt;script src="assets/vendor/jvectormap/jquery-jvectormap-2.0.5.min.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/world-mill-en.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/gdp-data.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/us_aea.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/usa.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/continents-mill.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/custom/world-map-markers2.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/custom/map-usa.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/jvectormap/custom/map-usa2.js"&gt;&lt;/script&gt;
+
+&lt;!-- Morris Graphs --&gt;
+&lt;script src="assets/vendor/morris/raphael-min.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/morris.min.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/area.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/barColors.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/dayData.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/donutColors.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/donutFormatter.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/morrisBar.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/negativeValues.js"&gt;&lt;/script&gt;
+&lt;script src="assets/vendor/morris/custom/stackedBar.js"&gt;&lt;/script&gt;
+
+&lt;!-- Custom JS files --&gt;
+&lt;script src="assets/js/custom.js"&gt;&lt;/script&gt;
+</code></pre>
+                </div>
+              </div>
+            </section>
+            <!-- Sectioon end -->
+
+
+            <!-- Sectioon start -->
+            <section class="document-section">
+              <h3 class="m-0">Thank You.</h3>
+
+            </section>
+            <!-- Sectioon end -->
+
+          </div>
+          <!-- Document sections end -->
+
+        </div>
+        <!-- Document body end -->
+
+      </div>
+      <!-- Document container end -->
+
+    </div>
+    <!-- Container end -->
+
+    <!-- Main Javascript -->
+    <script type="text/javascript" src="assets/js/jquery.min.js"></script>
+    <script type="text/javascript" src="assets/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="assets/js/stickyfill/stickyfill.min.js"></script>
+    <script type="text/javascript" src="assets/js/scroll-to/jquery.scrollTo.min.js"></script>
+    <script type="text/javascript" src="assets/js/prism/prism-min.js"></script>
+    <script type="text/javascript" src="assets/js/main.js"></script>
+
+  </body>
+
+</html>
