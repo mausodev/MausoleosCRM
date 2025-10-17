@@ -51,7 +51,7 @@ $stmt_equipos->execute();
 $result_equipos = $stmt_equipos->get_result();
 
 
-$query_notificaciones_baja = "SELECT correo FROM empleado WHERE notificacion_baja = 1 and sucursal = ?";
+$query_notificaciones_baja = "SELECT correo FROM empleado WHERE notificacion_baja = 1 and sucursal = ? and (puesto = 'EJECUTIVO' OR puesto = 'COORDINADOR DE TALENTO Y CULTURA' OR puesto = 'DIRECTOR' OR puesto = 'GERENTE'";
 $stmt_notificaciones_baja = $con->prepare($query_notificaciones_baja);
 $stmt_notificaciones_baja->bind_param("s",$sucursal);
 $stmt_notificaciones_baja -> execute();
@@ -268,9 +268,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               $mail->Subject = 'Actualización de Cuenta - Portal Mausoleos';
 
               $correos_por_plaza = [
-                  "CUAUHTEMOC" => ["isaac.chavez@mle.com.mx", "rogelio.torres@mle.com.mx", "diana.vargas@mle.com.mx"],
-                  "DELICIAS"  => ["jorge.betances@todaslasalmas.com.mx", "ramon.alderete@todaslasalmas.com.mx", "jessica.cobos@todaslasalmas.com.mx"],
-                  "CHIHUAHUA" => ["arnold.gonzalez@mle.com.mx", "luis.villalobos@mle.com.mx"]
+                  //"CUAUHTEMOC" => ["isaac.chavez@mle.com.mx", "rogelio.torres@mle.com.mx", "diana.vargas@mle.com.mx"],
+                  //"DELICIAS"  => ["jorge.betances@todaslasalmas.com.mx", "ramon.alderete@todaslasalmas.com.mx", "jessica.cobos@todaslasalmas.com.mx"],
+                  //"CHIHUAHUA" => ["arnold.gonzalez@mle.com.mx", "luis.villalobos@mle.com.mx"]
                   //"CHIHUAHUA"  => ["@MLE.com", "@MLE.com"],
                   // agrega correos por plazaplazas que necesites
               ];

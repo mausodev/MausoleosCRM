@@ -1,6 +1,7 @@
 <?php
 session_start();
 
+
 header('Content-Type: application/json');
 
 // Verifica que existan las variables necesarias
@@ -9,9 +10,13 @@ if (!isset($_SESSION['id'], $_SESSION['sucursal'], $_SESSION['puesto'])) {
   exit;
 }
 
+error_log('el valor del id_asesor: ' . $_SESSION['id']);
+
 $id_asesor = $_SESSION['id'];
 $sucursal = $_SESSION['sucursal'];
 $puesto = $_SESSION['puesto'];
+
+
 /*var_dump($id_asesor, $sucursal, $puesto);
 die();*/
 // Aquí iría tu lógica para obtener datos de la base
@@ -115,75 +120,140 @@ if ($puesto == 'ASESOR') {
         'proyeccion_asesor' => number_format($proyeccion_asesor, 2, '.', '')
     ]);
 } else if ($puesto == 'COORDINADOR') {
-    // First get all employees supervised by this coordinator
+
+    $id_consultado = isset($_POST['asesor_id']) ? $_POST['asesor_id'] : $id_asesor;
+
+    $sqlMetaCoordinador = "SELECT COALESCE(SUM(META,0)) AS meta_total from meta_venta where id_cordinador = ? and nombre_mes = ?";
+    $stmtMetaCord = $con->prepare($sqlMetaCoordinador);
+    $stmtMetaCord->bind_param("ss",$id_consultado, $mes);
+    $stmtMetaCord -> execute();
+    $resultMetaCord = $stmtMetaCord->get_result();
+    $rowMetaCord = $resultMetaCord->fetch_assoc();
+    $meta_total = $rowMetaCord ? (float)$rowMetaCord['meta_total']:0;
+
     $sqlEmpleados = "SELECT id FROM empleado WHERE id_supervisor = ?";
-    $stmtEmpleados = $con->prepare($sqlEmpleados);
-    $stmtEmpleados->bind_param("s", $id_asesor);
-    $stmtEmpleados->execute();
-    $resultEmpleados = $stmtEmpleados->get_result();
+        $stmtEmpleados = $con->prepare($sqlEmpleados);
+        $stmtEmpleados->bind_param("s", $id_consultado);
+        $stmtEmpleados->execute();
+        $resultEmpleados = $stmtEmpleados->get_result();
+        
+        $venta_total = 0;
+        $venta_pronostico_total = 0;
+
+        while($rowEmpelado = $resultEmpleado->fetch_assoc()){
+            $id_empleado = $rowEmpleado['id'];
+
+            $sqlVenta = "SELECT COALESCE(SUM(venta_embudo), 0) as venta_total 
+                         FROM cliente 
+                         WHERE etapa = 'CERRADO GANADO' 
+                         AND asesor = ? 
+                         AND mes = ?";
+            
+            $stmtVenta = $con->prepare($sqlVenta);
+            $stmtVenta->bind_param("ss",$id_empleado, $mes);
+            $stmtVenta->execute();
+            $resultVenta = $stmtVenta->get_result();
+            $rowVenta = $resultVenta ->fetch_assoc();
+            $venta = $rowVenta ? (float)$rowVenta['venta_total']:0;
+
+            $sqlPronostico = "SELECT COALESCE(SUM(venta_embudo), 0) as pronostico 
+                              FROM cliente 
+                              WHERE etapa = 'EN PRONOSTICO' 
+                              AND asesor = ?
+                              AND mes = ?";
+            
+            $stmtPronostico = $con->prepare($sqlPronostico);
+            $stmtPronostico->bind_param("ss", $id_empleado, $mes);
+            $stmtPronostico->execute();
+            $resultPronostico = $stmtPronostico->get_result();
+            $rowPronostico = $resultPronostico->fetch_assoc();
+            $pronostico = $rowPronostico ? (float)$rowPronostico['pronostico'] : 0;
+            
+            $venta_total += $venta;
+            $venta_pronostico_total += $pronostico;
+        }
+
+        $venta_faltante_total = $meta_total - $venta_total;
+
+        error_log("Totales coordinador - Venta: $venta_total, Meta: $meta_total, Faltante: $venta_faltante_total");
+
+        echo json_encode([
+            'success' => true,
+            'venta' => number_format($venta_total,2,'.',''),
+            'venta_faltante' => number_format($venta_faltante_total,2,'.',''),
+            
+        ]);
+    // First get all employees supervised by this coordinator
+    // $sqlEmpleados = "SELECT id FROM empleado WHERE id_supervisor = ?";
+    // $stmtEmpleados = $con->prepare($sqlEmpleados);
+    // $stmtEmpleados->bind_param("s", $id_asesor);
+    // $stmtEmpleados->execute();
+    // $resultEmpleados = $stmtEmpleados->get_result();
     
-    $venta_total = 0;
-    $venta_faltante_total = 0;
-    $venta_pronostico_total = 0;
+    // $venta_total = 0;
+    // $venta_faltante_total = 0;
+    // $venta_pronostico_total = 0;
     
-    while ($rowEmpleado = $resultEmpleados->fetch_assoc()) {
-        $id_empleado = $rowEmpleado['id'];
+    // while ($rowEmpleado = $resultEmpleados->fetch_assoc()) {
+    //     $id_empleado = $rowEmpleado['id'];
         
-        // Get sales data for each employee
-        $sqlVenta = "SELECT COALESCE(SUM(venta_embudo), 0) as venta_total 
-                     FROM cliente 
-                     WHERE etapa = 'CERRADO GANADO' 
-                     AND asesor = ? 
-                     AND mes = ?";
+    //     // Get sales data for each employee
+    //     $sqlVenta = "SELECT COALESCE(SUM(venta_embudo), 0) as venta_total 
+    //                  FROM cliente 
+    //                  WHERE etapa = 'CERRADO GANADO' 
+    //                  AND asesor = ? 
+    //                  AND mes = ?";
         
-        $stmtVenta = $con->prepare($sqlVenta);
-        $stmtVenta->bind_param("ss", $id_empleado, $mes);
-        $stmtVenta->execute();
-        $resultVenta = $stmtVenta->get_result();
-        $rowVenta = $resultVenta->fetch_assoc();
-        $venta = $rowVenta ? (float)$rowVenta['venta_total'] : 0;
+    //     $stmtVenta = $con->prepare($sqlVenta);
+    //     $stmtVenta->bind_param("ss", $id_empleado, $mes);
+    //     $stmtVenta->execute();
+    //     $resultVenta = $stmtVenta->get_result();
+    //     $rowVenta = $resultVenta->fetch_assoc();
+    //     $venta = $rowVenta ? (float)$rowVenta['venta_total'] : 0;
         
-        // Get sales target for each employee
-        $sqlMeta = "SELECT COALESCE(meta, 0) as meta 
-                    FROM meta_venta 
-                    WHERE id_cordinador = ? 
-                    AND nombre_mes = ?";
+    //     // Get sales target for each employee
+    //     $sqlMeta = "SELECT COALESCE(meta, 0) as meta 
+    //                 FROM meta_venta 
+    //                 WHERE id_cordinador = ? 
+    //                 AND nombre_mes = ?";
         
-        $stmtMeta = $con->prepare($sqlMeta);
-        $stmtMeta->bind_param("ss", $id_empleado, $mes);
-        $stmtMeta->execute();
-        $resultMeta = $stmtMeta->get_result();
-        $rowMeta = $resultMeta->fetch_assoc();
-        $meta = $rowMeta ? (float)$rowMeta['meta'] : 0;
-        $venta_faltante = $meta - $venta;
+    //     $stmtMeta = $con->prepare($sqlMeta);
+    //     $stmtMeta->bind_param("ss", $id_empleado, $mes);
+    //     $stmtMeta->execute();
+    //     $resultMeta = $stmtMeta->get_result();
+    //     $rowMeta = $resultMeta->fetch_assoc();
+    //     $meta = $rowMeta ? (float)$rowMeta['meta'] : 0;
+    //     $venta_faltante = $meta - $venta;
         
-        // Get forecast for each employee
-        $sqlPronostico = "SELECT COALESCE(SUM(venta_embudo), 0) as pronostico 
-                          FROM cliente 
-                          WHERE etapa = 'EN PRONOSTICO' 
-                          AND asesor = ?
-                          AND mes = ?";
+    //     // Get forecast for each employee
+    //     $sqlPronostico = "SELECT COALESCE(SUM(venta_embudo), 0) as pronostico 
+    //                       FROM cliente 
+    //                       WHERE etapa = 'EN PRONOSTICO' 
+    //                       AND asesor = ?
+    //                       AND mes = ?";
         
-        $stmtPronostico = $con->prepare($sqlPronostico);
-        $stmtPronostico->bind_param("ss", $id_empleado, $mes);
-        $stmtPronostico->execute();
-        $resultPronostico = $stmtPronostico->get_result();
-        $rowPronostico = $resultPronostico->fetch_assoc();
-        $pronostico = $rowPronostico ? (float)$rowPronostico['pronostico'] : 0;
+    //     $stmtPronostico = $con->prepare($sqlPronostico);
+    //     $stmtPronostico->bind_param("ss", $id_empleado, $mes);
+    //     $stmtPronostico->execute();
+    //     $resultPronostico = $stmtPronostico->get_result();
+    //     $rowPronostico = $resultPronostico->fetch_assoc();
+    //     $pronostico = $rowPronostico ? (float)$rowPronostico['pronostico'] : 0;
         
-        // Accumulate totals
-        $venta_total += $venta;
-        $venta_faltante_total += $venta_faltante;
-        $venta_pronostico_total += $pronostico;
-    }
+    //     // Accumulate totals
+    //     $venta_total += $venta;
+    //     $venta_faltante_total += $venta_faltante;
+    //     $venta_pronostico_total += $pronostico;
+    // }
     
-    echo json_encode([
-        'success' => true,
-        'venta' => number_format($venta_total, 2, '.', ''),
-        'venta_faltante' => number_format($venta_faltante_total, 2, '.', ''),
-        'venta_pronostico' => number_format($venta_pronostico_total, 2, '.', '')
-    ]);
-} else if ($puesto == 'GERENTE' || $puesto == 'EJECUTIVO') {
+    // echo json_encode([
+    //     'success' => true,
+    //     'venta' => number_format($venta_total, 2, '.', ''),
+    //     'venta_faltante' => number_format($venta_faltante_total, 2, '.', ''),
+    //     'venta_pronostico' => number_format($venta_pronostico_total, 2, '.', '')
+    // ]);
+} 
+
+else if ($puesto == 'GERENTE' || $puesto == 'EJECUTIVO') {
     // Get all advisors in the same branch
     $sqlAsesores = "SELECT id FROM empleado WHERE puesto = 'ASESOR' AND sucursal = ?";
     $stmtAsesores = $con->prepare($sqlAsesores);

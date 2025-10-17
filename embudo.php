@@ -14,6 +14,10 @@ $departamento = $accessData['departamento'];
 $puesto = $accessData['puesto'];
 $rol_venta = $accessData['rol_venta'];
 
+
+
+
+
 $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AND fecha_cierre";
        $result = $con->query($sqlCierre);
 
@@ -411,7 +415,7 @@ $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AN
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="coordinador" class="form-label">Coordinador</label>
-                            <select class="form-select" id="coordinador" name="coordinador" <?php echo ($puesto === 'COORDINADOR') ? 'disabled' : ''; ?>>
+                            <select class="form-select" id="coordinador" name="coordinador" <?php echo ($puesto === 'COORDINADOR') ? '' : 'disabled'; ?>>
                                 <option value="">Seleccione un coordinador</option>
                                 <?php
                                 // Query para obtener coordinadores
@@ -425,6 +429,7 @@ $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AN
                                     echo "<option value='" . $row['id'] . "' " . $selected . ">" . $row['correo'] . "</option>";
                                 }
                                 ?>
+                                
                             </select>
                             <div class="mt-2">
                                 <strong>Total Coordinador: </strong>
@@ -435,6 +440,17 @@ $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AN
                             <label for="asesor" class="form-label">Asesor</label>
                             <select class="form-select" id="asesor" name="asesor">
                                 <option value="">Seleccione un asesor</option>
+                                <?php
+                                $query_asesor = "SELECT id, correo FROM empleado
+                                                WHERE puesto = 'ASESOR'              
+                                                AND id_supervisor = '$supervisor'";
+                                $result_asesor = mysqli_query($con, $query_asesor);
+                                
+                                while($row = mysqli_fetch_assoc($result_asesor)) {
+                                    $selected = ($puesto === 'ASESOR' && $row['id'] == $id_asesor) ? 'selected' : '';
+                                    echo "<option value='" . $row['id'] . "' " . $selected . ">" . $row['correo'] . "</option>";
+                                }
+                                ?>
                             </select>
                             <div class="mt-2">
                                 <strong>Total Asesor: </strong>
@@ -771,6 +787,61 @@ $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AN
             }
         }
 
+        async function updateVentasActuales(){
+           debugger;
+            const id_asesor = $('#asesor').val();
+            console.log("El id del asesor es: ", id_asesor);
+            
+            if(!id_asesor){
+               console.log("No hay asesor seleccionado");
+               $('#total_venta').text(formatCurrency(0));
+               return;
+            }
+            debugger;
+          try {
+            const formData = new FormData();
+            formData.append('asesor_id',id_asesor);
+
+            const response = await fetch('get_venta.php',{
+              method: 'POST',
+              body: formData
+            });
+
+            if(!response.ok){
+              throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const data = response.json();
+            console.log("Respuesta completa: ",data);
+            debugger;
+            if (data.success) {
+                 $('#total_venta').text(formatCurrency(parseFloat(data.venta)));
+
+                 if(data.venta_faltante){
+                  $('#venta_faltante').text(formatCurrency(parseFloat(data.venta_faltante)));
+                 }
+
+                 if(data.venta_pronostico){
+                  $('#venta_pronostico').text(formatCurrency(parseFloat(data.venta_pronostico)))
+                 }
+
+                 const totalCoordinador = parseFloat($('#total_coordinador').text().replace(/[^0-9.-]+/g, '')) || 0;
+                 
+                 const totalAsesor = parseFloat($('#total_asesor').text().replace(/[^0-9.-]+/g, '')) || 0;
+                
+                 if (totalCoordinador > 0 && totalAsesor > 0) {
+                      actualizarGrafico(totalCoordinador, totalAsesor, parseFloat(data.venta));
+                  }
+              }
+            else{
+              console.error("Error en la respuesta: ", data.message);
+            }
+          } catch (error) {
+            console.error("Error en el fetch: ",error )
+          }
+        }
+                
+
         function cargarClientes(asesorId) {
             if(asesorId) {
                 $.ajax({
@@ -880,6 +951,7 @@ $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AN
 
         $('#coordinador').change(function() {
             var coordinadorId = $(this).val();
+            updateVentasActuales();
             console.log('Coordinador seleccionado:', coordinadorId);
             if(coordinadorId) {
                 $.ajax({
@@ -920,6 +992,7 @@ $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AN
 
         $('#asesor').change(function() {
             var asesorId = $(this).val();
+            updateVentasActuales();
             if(asesorId) {
                 $.ajax({
                     url: 'get_asesores.php',
