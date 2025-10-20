@@ -51,7 +51,7 @@ $stmt_equipos->execute();
 $result_equipos = $stmt_equipos->get_result();
 
 
-$query_notificaciones_baja = "SELECT correo FROM empleado WHERE notificacion_baja = 1 and sucursal = ? and (puesto = 'EJECUTIVO' OR puesto = 'COORDINADOR DE TALENTO Y CULTURA' OR puesto = 'DIRECTOR' OR puesto = 'GERENTE'";
+$query_notificaciones_baja = "SELECT correo FROM empleado WHERE notificacion_baja = 1 and sucursal = ? and (puesto = 'EJECUTIVO' OR puesto = 'COORDINADOR DE TALENTO Y CULTURA' OR puesto = 'DIRECTOR' OR puesto = 'GERENTE');";
 $stmt_notificaciones_baja = $con->prepare($query_notificaciones_baja);
 $stmt_notificaciones_baja->bind_param("s",$sucursal);
 $stmt_notificaciones_baja -> execute();
@@ -64,7 +64,7 @@ while ($baja = $result_notificaciones_baja->fetch_assoc()) {
 }
 
 // Get supervisors (COORDINADOR, EJECUTIVO, GERENTE) filtered by plaza
-$query_supervisores = "SELECT id, correo FROM empleado WHERE puesto IN ('COORDINADOR', 'EJECUTIVO', 'GERENTE') AND sucursal = ? AND (estado_empleado = 'Activo' OR estado_empleado = '') AND activo = 1";
+$query_supervisores = "SELECT id, correo FROM empleado WHERE puesto IN ('COORDINADOR', 'EJECUTIVO', 'GERENTE', 'ASESOR') AND sucursal = ? AND (estado_empleado = 'Activo' OR estado_empleado = '') AND activo = 1";
 $stmt_supervisores = $con->prepare($query_supervisores);
 $stmt_supervisores->bind_param("s", $sucursal);
 $stmt_supervisores->execute();
@@ -277,8 +277,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               
               // 🔹 Cambia el body y destinatarios si está en BAJA
               if ($estado_empleado == "BAJA") {
+
+
+              
                   // --- destinatarios distintos ---
-                 if (isset($notificaciones_baja)) {
+                 if (!empty($notificaciones_baja)) {
                     foreach ($notificaciones_baja as $correo) {
                         $mail->addAddress($correo);
                     }
@@ -298,7 +301,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               } else {
                   // --- destinatario normal ---
 
-                  $correo_empleado = "arnold.gonzalez@mle.com.mx";
                   $mail->addAddress($correo_empleado);
 
                   // --- cuerpo del correo ---
@@ -1245,6 +1247,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
               </div>
             </div>
+
+              <div class="modal fade" id="seleccionTipoModal" tabindex="-1" aria-labelledby="seleccionTipoModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                  <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                          <div class="modal-header bg-primary text-white">
+                              <h5 class="modal-title" id="seleccionTipoModalLabel">
+                                  <i class="icon-users"></i> Reasignación de Clientes
+                              </h5>
+                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                              <div class="alert alert-info">
+                                  <strong>Atención:</strong> El empleado tiene <span id="totalClientesSeleccion" class="fw-bold">0</span> cliente(s) asignado(s).
+                                  <br>¿Cómo desea reasignar los clientes?
+                              </div>
+                              <div class="d-grid gap-3">
+                                  <button type="button" class="btn btn-outline-primary btn-lg" id="btnReasignacionIndividual">
+                                      <i class="icon-user"></i> Reasignación Individual
+                                      <small class="d-block text-muted">Asignar cada cliente a diferentes asesores</small>
+                                  </button>
+                                  <button type="button" class="btn btn-outline-success btn-lg" id="btnReasignacionGrupo">
+                                      <i class="icon-users"></i> Reasignación en Grupo
+                                      <small class="d-block text-muted">Asignar todos los clientes a un solo asesor</small>
+                                  </button>
+                              </div>
+                          </div>
+                          <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar Baja</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- MODAL 2: Reasignación en Grupo (NUEVO) -->
+              <div class="modal fade" id="reasignacionGrupoModal" tabindex="-1" aria-labelledby="reasignacionGrupoModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                  <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                          <div class="modal-header bg-success text-white">
+                              <h5 class="modal-title" id="reasignacionGrupoModalLabel">
+                                  <i class="icon-users"></i> Reasignación en Grupo
+                              </h5>
+                              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                              <div class="alert alert-success">
+                                  <strong>Información:</strong> Todos los <span id="totalClientesGrupo" class="fw-bold">0</span> cliente(s) serán asignados al asesor seleccionado.
+                              </div>
+                              
+                              <div class="mb-3">
+                                  <label for="asesorGrupoSelect" class="form-label fw-bold">
+                                      <i class="icon-user"></i> Seleccione el nuevo asesor:
+                                  </label>
+                                  <select class="form-select form-select-lg" id="asesorGrupoSelect" >
+                                      <option value="">-- Seleccione un asesor --</option>
+                                  </select>
+                                  <div class="invalid-feedback">
+                                      Por favor seleccione un asesor.
+                                  </div>
+                              </div>
+
+                              <div class="card">
+                                  <div class="card-header">
+                                      <strong>Clientes a Reasignar:</strong>
+                                  </div>
+                                  <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                                      <ul id="listaClientesGrupo" class="list-group">
+                                          <!-- Se llenará dinámicamente con JavaScript -->
+                                      </ul>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <button type="button" class="btn btn-success" id="confirmarReasignacionGrupo">
+                                  <i class="icon-check"></i> Confirmar y Dar de Baja
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- MODAL 3: Reasignación Individual (CORREGIDO) -->
+              <div class="modal fade" id="redistribucionModal" tabindex="-1" aria-labelledby="redistribucionModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                  <div class="modal-dialog modal-xl">
+                      <div class="modal-content">
+                          <div class="modal-header bg-warning">
+                              <h5 class="modal-title" id="redistribucionModalLabel">
+                                  <i class="icon-warning"></i> Reasignación Individual de Clientes
+                              </h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                              <div class="alert alert-info">
+                                  <strong>Atención:</strong> El empleado tiene <span id="totalClientes" class="fw-bold">0</span> cliente(s) activo(s).
+                                  <br>Por favor, reasigne cada cliente a un nuevo asesor antes de continuar con la baja.
+                              </div>
+
+                              <div class="table-responsive">
+                                  <table class="table table-bordered table-hover">
+                                      <thead class="table-light">
+                                          <tr>
+                                              <th width="10%">ID Cliente</th>
+                                              <th width="30%">Nombre del Cliente</th>
+                                              <th width="20%">Etapa Actual</th>
+                                              <th width="40%">Reasignar a:</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="clientesTableBody">
+                                          <!-- Se llenará dinámicamente con JavaScript -->
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                          <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <button type="button" class="btn btn-success" id="confirmarRedistribucion">
+                                  <i class="icon-check"></i> Confirmar Reasignación y Dar de Baja
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
             </form>
           </div>
           <!-- Container ends -->
@@ -1295,6 +1419,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="assets/js/custom.js"></script>
     
     <style>
+
+      /* Estilos adicionales para el modal */
+            #redistribucionModal .modal-body {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+
+            .reasignar-select.is-invalid {
+                border-color: #dc3545;
+            }
+
+            #clientesTableBody tr:hover {
+                background-color: #f8f9fa;
+            }
+
+            .table th {
+                position: sticky;
+                top: 0;
+                background-color: #f8f9fa;
+                z-index: 10;
+            }
         /* Convert text fields to uppercase */
         input[type="text"], 
         input[type="email"], 
@@ -1313,6 +1458,273 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         // Handle update user selection
+        let formDataGlobal = null;
+        let clientesParaReasignar = [];
+        let asesoresDisponibles = [];
+
+        document.querySelector('form').addEventListener('submit', function(e){
+          const estatusSelect = document.getElementById('estatus');
+          const empleadoId = document.getElementById('employee_id').value;
+
+          if(estatusSelect.value.toUpperCase()==="BAJA" && empleadoId){
+            e.preventDefault();
+
+            formDataGlobal = new FormData(this);
+            cargarClientesAsesor(empleadoId);
+
+          }
+        });
+
+        function cargarClientesAsesor(asesorId){
+          fetch(`get_clientes_asesor_DEBUG.php?asesor_id=${asesorId}`)
+            .then(response=>response.json())
+            .then(data=>{
+              console.log("EL VALOR COMPLETO DE LA DATA: ", data)
+              if(data.success){
+                if (data.clientes.length === 0) {
+                  alert('El empleado no tiene clientes asignados. Procediendo con la baja.');
+                  document.querySelector('form').submit();
+                }
+                else{
+                  clientesParaReasignar = data.clientes;
+                  asesoresDisponibles =  data.asesores || [];
+                  mostrarModalSeleccionTipo(data.clientes.length);
+                }
+              }
+              else{
+                alert('Error al cargar clientes: ' + (data.error || 'Error desconocido'));
+              }
+            })
+            .catch(error=>{
+              console.error('Error:', error);
+                alert('Error al cargar los clientes del asesor');
+            });
+        }
+
+          function mostrarModalSeleccionTipo(totalClientes){
+            document.getElementById('totalClientesSeleccion').textContent = totalClientes;
+            const modal = new bootstrap.Modal(document.getElementById('seleccionTipoModal'));
+            modal.show();
+          }
+
+            function mostrarModalReasignacionGrupo() {
+            const totalClientesGrupo = document.getElementById('totalClientesGrupo');
+            const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
+            const listaClientesGrupo = document.getElementById('listaClientesGrupo');
+
+            // Actualizar total de clientes
+            totalClientesGrupo.textContent = clientesParaReasignar.length;
+
+            // Llenar select de asesores
+            asesorGrupoSelect.innerHTML = '<option value="">-- Seleccione un asesor --</option>';
+            
+            if (asesoresDisponibles.length === 0) {
+                asesorGrupoSelect.innerHTML += '<option value="" disabled>No hay asesores disponibles</option>';
+                console.warn('No hay asesores disponibles');
+            } else {
+                asesoresDisponibles.forEach(asesor => {
+                    const option = document.createElement('option');
+                    option.value = asesor.id;
+                    option.textContent = `${asesor.correo} - ${asesor.puesto}`;
+                    asesorGrupoSelect.appendChild(option);
+                });
+            }
+
+            // Llenar lista de clientes
+            listaClientesGrupo.innerHTML = '';
+            clientesParaReasignar.forEach(cliente => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <div>
+                        <strong>#${cliente.id}</strong> - ${cliente.nombre || 'Sin nombre'}
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${cliente.etapa || 'N/A'}</span>
+                `;
+                listaClientesGrupo.appendChild(li);
+            });
+
+            // Cerrar modal de selección y abrir modal de grupo
+            const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
+            if (modalSeleccion) modalSeleccion.hide();
+
+            const modal = new bootstrap.Modal(document.getElementById('reasignacionGrupoModal'));
+            modal.show();
+        }
+
+              function mostrarModalRedistribucionIndividual() {
+              const tbody = document.getElementById('clientesTableBody');
+              const totalClientes = document.getElementById('totalClientes');
+
+              totalClientes.textContent = clientesParaReasignar.length;
+              tbody.innerHTML = '';
+
+              clientesParaReasignar.forEach(cliente => {
+                  const row = document.createElement('tr');
+                  
+                  // Generar opciones de asesores
+                  let opcionesAsesores = '<option value="">Seleccione un asesor...</option>';
+                  
+                  if (asesoresDisponibles.length === 0) {
+                      opcionesAsesores += '<option value="" disabled>No hay asesores disponibles</option>';
+                      console.warn('No hay asesores disponibles para el cliente', cliente.id);
+                  } else {
+                      asesoresDisponibles.forEach(asesor => {
+                          opcionesAsesores += `
+                              <option value="${asesor.id}">
+                                  ${asesor.correo} - ${asesor.puesto}
+                              </option>
+                          `;
+                      });
+                  }
+
+                  row.innerHTML = `
+                      <td>${cliente.id}</td>
+                      <td>${cliente.nombre || 'Sin nombre'}</td>
+                      <td>
+                          <span class="badge bg-primary">${cliente.etapa || 'N/A'}</span>
+                      </td>
+                      <td>
+                          <select class="form-select reasignar-select" data-cliente-id="${cliente.id}" required>
+                              ${opcionesAsesores}
+                          </select>
+                      </td>
+                  `;
+                  tbody.appendChild(row);
+              });
+
+              // Cerrar modal de selección y abrir modal individual
+              const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
+              if (modalSeleccion) modalSeleccion.hide();
+
+              const modal = new bootstrap.Modal(document.getElementById('redistribucionModal'));
+              modal.show();
+          }
+
+        document.getElementById('btnReasignacionIndividual').addEventListener('click', ()=>{
+          mostrarModalRedistribucionIndividual();
+        });
+
+        document.getElementById('btnReasignacionGrupo').addEventListener('click', ()=>{
+          mostrarModalReasignacionGrupo();
+        });
+
+        document.getElementById('confirmarReasignacionGrupo').addEventListener('click', function() {
+              const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
+              const nuevoAsesorId = asesorGrupoSelect.value;
+
+              if (!nuevoAsesorId) {
+                  asesorGrupoSelect.classList.add('is-invalid');
+                  alert('Por favor, seleccione un asesor.');
+                  return;
+              }
+
+              asesorGrupoSelect.classList.remove('is-invalid');
+
+              // Deshabilitar botón
+              this.disabled = true;
+              this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+
+              // Crear array de reasignaciones (todos al mismo asesor)
+              const reasignaciones = clientesParaReasignar.map(cliente => ({
+                  cliente_id: cliente.id,
+                  nuevo_asesor_id: nuevoAsesorId
+              }));
+
+              // Enviar al servidor
+              fetch('reasignar_clientes.php', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      reasignaciones: reasignaciones
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Clientes reasignados exitosamente. Procediendo con la baja del empleado.');
+                      bootstrap.Modal.getInstance(document.getElementById('reasignacionGrupoModal')).hide();
+                      document.querySelector('form').submit();
+                  } else {
+                      throw new Error(data.error || 'Error al reasignar clientes');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  alert('Error al reasignar clientes: ' + error.message);
+                  this.disabled = false;
+                  this.innerHTML = '<i class="icon-check"></i> Confirmar y Dar de Baja';
+              });
+          });
+
+
+        document.getElementById('confirmarRedistribucion').addEventListener('click', function() {
+        const selects = document.querySelectorAll('.reasignar-select');
+        const reasignaciones = [];
+        let todosAsignados = true;
+        
+        // Validar que todos los clientes tengan un asesor asignado
+        selects.forEach(select => {
+            const clienteId = select.getAttribute('data-cliente-id');
+            const nuevoAsesorId = select.value;
+            
+            if (!nuevoAsesorId) {
+                todosAsignados = false;
+                select.classList.add('is-invalid');
+            } else {
+                select.classList.remove('is-invalid');
+                reasignaciones.push({
+                    cliente_id: clienteId,
+                    nuevo_asesor_id: nuevoAsesorId
+                });
+            }
+        });
+        
+        if (!todosAsignados) {
+            alert('Por favor, asigne un asesor a todos los clientes antes de continuar.');
+            return;
+        }
+        
+        // Deshabilitar botón para evitar doble clic
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+        
+        // Enviar reasignaciones al servidor
+        fetch('reasignar_clientes.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reasignaciones: reasignaciones
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cerrar modal
+                bootstrap.Modal.getInstance(document.getElementById('redistribucionModal')).hide();
+                
+                // Ahora sí enviar el formulario de baja
+                alert('Clientes reasignados exitosamente. Procediendo con la baja del empleado.');
+                bootstrap.Modal.getInstance(document.getElementById('redistribucionModal')).hide();
+                document.querySelector('form').submit();
+            } else {
+                alert('Error al reasignar clientes: ' + data.error);
+               
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar la reasignación');
+            this.disabled = false;
+            this.innerHTML = '<i class="icon-check"></i> Confirmar Reasignacion y Dar de Baja';
+        });      
+
+        });
+
         const updateUserSelect = document.getElementById('update_user');
         console.log('Update user select found:', updateUserSelect);
         
@@ -1680,6 +2092,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if (!$acceso): ?>
     <?php echo generarScriptDeshabilitarElementos(); ?>
     <?php endif; ?>
+
+
+  
 
   </body>
 
