@@ -1476,7 +1476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         function cargarClientesAsesor(asesorId){
-          fetch(`get_clientes_asesor_DEBUG.php?asesor_id=${asesorId}`)
+          fetch(`get_clientes_asesor.php?asesor_id=${asesorId}`)
             .then(response=>response.json())
             .then(data=>{
               console.log("EL VALOR COMPLETO DE LA DATA: ", data)
