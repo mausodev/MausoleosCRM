@@ -24,7 +24,6 @@ $query = "SELECT id, correo
           FROM empleado 
           WHERE puesto = ? 
           AND sucursal = ? 
-          AND estado_empleado = '' 
           ORDER BY correo ASC";
 
 $stmt = $con->prepare($query);

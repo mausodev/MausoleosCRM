@@ -419,9 +419,8 @@ $sqlCierre = "SELECT mes FROM calendario WHERE SYSDATE() BETWEEN fecha_inicio AN
                                 <option value="">Seleccione un coordinador</option>
                                 <?php
                                 // Query para obtener coordinadores
-                                $query_coord = "SELECT id, correo FROM empleado 
-                                              WHERE puesto = 'COORDINADOR' 
-                                              AND sucursal = '$sucursal'";
+                                $query_coord = "
+                                ";
                                 $result_coord = mysqli_query($con, $query_coord);
                                 
                                 while($row = mysqli_fetch_assoc($result_coord)) {

@@ -81,7 +81,6 @@ try {
                        AND sucursal = ? 
                        AND id != ? 
                        AND puesto = 'ASESOR' 
-                       AND (estado_empleado = 'Activo' OR estado_empleado = '') 
                        ORDER BY correo";
 
     $stmt_asesores = $con->prepare($query_asesores);
