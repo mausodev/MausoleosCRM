@@ -76,7 +76,7 @@ while ($baja = $result_notificaciones_baja->fetch_assoc()) {
 }
 
 // Get supervisors (COORDINADOR, EJECUTIVO, GERENTE) filtered by plaza
-$query_supervisores = "SELECT id, correo FROM empleado WHERE puesto IN ('COORDINADOR', 'EJECUTIVO', 'GERENTE', 'ASESOR') AND sucursal = ? AND (estado_empleado = 'Activo' OR estado_empleado = '') AND activo = 1";
+$query_supervisores = "SELECT id, correo FROM empleado WHERE puesto IN ('COORDINADOR', 'EJECUTIVO', 'GERENTE') AND sucursal = ?  AND activo = 1";
 $stmt_supervisores = $con->prepare($query_supervisores);
 $stmt_supervisores->bind_param("s", $sucursal);
 $stmt_supervisores->execute();
@@ -135,8 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $supervisor_id = $_POST['supervisor'] ?? '';
     $estado_empleado = strtoupper($_POST['estatus'] ?? 'Activo');
     
-    // Debug: Log the estado_empleado value
-    error_log("Estado empleado value: " . $estado_empleado);
     $departamento_id = $_POST['departamento'] ?? '';
     
     // Get names from dropdowns instead of IDs
@@ -232,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
-        if ($estado_empleado == 'INACTIVO' || $estado_empleado == 'BAJA' ) {
+        if ($activo = 0 ) {
             $fecha_baja = date('Y-m-d H:i:s');
             $activo = 2;
         }
@@ -319,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               ];
               
               // 🔹 Cambia el body y destinatarios si está en BAJA
-              if ($estado_empleado == "BAJA") {
+              if ($activo == 2 || $activo == 0) {
 
 
               
@@ -1969,7 +1967,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             { id: 'equipo', value: data.equipo },
                             { id: 'apsi', value: data.apsi },
                             { id: 'notas', value: data.notas },
-                            { id: 'supervisor', value: data.supervisor },
+                            { id: 'supervisor', value: data.id_supervisor },
                             { id: 'estatus', value: data.estado_empleado || 'Activo' },
                             { id: 'shortName', value: data.iniciales },
                             { id: 'departamento', value: data.departamento },
