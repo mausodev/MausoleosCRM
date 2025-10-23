@@ -65,7 +65,7 @@ $result_equipos = $stmt_equipos->get_result();
 
 $query_notificaciones_baja = "SELECT correo FROM empleado WHERE notificacion_baja = 1 and sucursal = ? and (puesto = 'EJECUTIVO' OR puesto = 'COORDINADOR DE TALENTO Y CULTURA' OR puesto = 'DIRECTOR' OR puesto = 'GERENTE');";
 $stmt_notificaciones_baja = $con->prepare($query_notificaciones_baja);
-$stmt_notificaciones_baja->bind_param("s",$sucursal);
+$stmt_notificaciones_baja->bind_param("s",$_SESSION['sucursal']);
 $stmt_notificaciones_baja -> execute();
 $result_notificaciones_baja = $stmt_notificaciones_baja -> get_result();
 
@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          if ($estado_empleado == 'BAJA') {
         
               // Verificar si tiene clientes asignados
-              $query_check_clients = "SELECT COUNT(*) as total FROM cliente WHERE asesor = ?";
+              $query_check_clients = "SELECT COUNT(*) as total FROM cliente WHERE asesor = ? AND etapa NOT IN ('CERRADO PERDIDO', 'CERRADO GANADO') ";
               $stmt_check = $con->prepare($query_check_clients);
               $stmt_check->bind_param("i", $employee_id);
               $stmt_check->execute();
@@ -1500,7 +1500,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 
- <script>
+    <script>
       document.addEventListener('DOMContentLoaded', function() {
         // Handle update user selection
         let formDataGlobal = null;
@@ -1542,10 +1542,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if(data.success){
                             if (data.clientes.length === 0) {
                                 // No hay clientes - marcar como completado y enviar
-                                console.log('ℹ️ No hay clientes - Permitiendo baja directa');
-                                procesoReasignacionCompletado = true;
-                                alert('El empleado no tiene clientes asignados. Procediendo con la baja.');
-                                document.querySelector('form').submit();
+                               // No hay clientes - marcar como completado y agregar campo oculto
+                                    console.log('ℹ️ No hay clientes - Permitiendo baja directa');
+                                    procesoReasignacionCompletado = true;
+                                    
+                                    // ⭐ AGREGAR CAMPO OCULTO antes de enviar
+                                    const form = document.querySelector('form');
+                                    let hiddenInput = form.querySelector('input[name="clientes_reasignados"]');
+                                    if (!hiddenInput) {
+                                        hiddenInput = document.createElement('input');
+                                        hiddenInput.type = 'hidden';
+                                        hiddenInput.name = 'clientes_reasignados';
+                                        hiddenInput.value = '1';
+                                        form.appendChild(hiddenInput);
+                                    }
+                                    
+                                    alert('El empleado no tiene clientes asignados. Procediendo con la baja.');
+                                    form.submit();
                             } else {
                                 // Hay clientes - mostrar modal
                                 clientesParaReasignar = data.clientes;
@@ -1684,184 +1697,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
                   if (modalSeleccion) modalSeleccion.hide();
 
-            const modal = new bootstrap.Modal(document.getElementById('redistribucionModal'));
-            const modalElement = document.getElementById('redistribucionModal');
-            
-            modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
-                if (!procesoReasignacionCompletado) {
-                    console.log('❌ Modal individual cerrado sin completar');
-                    limpiarEstadoReasignacion();
-                }
-                modalElement.removeEventListener('hidden.bs.modal', onModalClose);
-            });
-            
-            modal.show();
-        }
-
-        // ============================================
-        // EVENT LISTENER: SELECCIONAR EMPLEADO PARA ACTUALIZAR
-        // ============================================
-        document.getElementById('update_user').addEventListener('change', function(e) {
-          const selectedId = e.target.value;
-          
-          if (!selectedId) {
-            // Si se deselecciona, limpiar el formulario
-            document.getElementById('employee_id').value = '';
-            document.getElementById('nombre').value = '';
-            document.getElementById('apellido_paterno').value = '';
-            document.getElementById('apellido_materno').value = '';
-            document.getElementById('shortName').value = '';
-            document.getElementById('correo').value = '';
-            document.getElementById('puesto').value = '';
-            document.getElementById('categoria').value = '';
-            document.getElementById('meta').value = '';
-            document.getElementById('equipo').value = '';
-            document.getElementById('apsi').value = '';
-            document.getElementById('notas').value = '';
-            document.getElementById('supervisor').value = '';
-            document.getElementById('departamento').value = '';
-            document.getElementById('clase').value = '';
-            document.getElementById('estatus').value = '';
-            document.getElementById('birthDay').value = '';
-            document.getElementById('fecha_inicio').value = '';
-            document.getElementById('plantilla').checked = false;
-            return;
-          }
-          
-          console.log('Selected employee ID:', selectedId);
-          
-          // Fetch employee data
-          fetch(`get_employee.php?id=${selectedId}`)
-            .then(response => response.json())
-            .then(data => {
-              console.log('Employee data received:', data);
-              
-              if (data.error) {
-                alert('Error: ' + data.error);
-                return;
+                  // Abrir modal individual
+                  const modal = new bootstrap.Modal(document.getElementById('redistribucionModal'));
+                  
+                  // ⭐ AGREGAR LISTENERS DE CANCELACIÓN
+                  const modalElement = document.getElementById('redistribucionModal');
+                  
+                  modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
+                      // Solo limpiar si NO se completó el proceso
+                      if (!procesoReasignacionCompletado) {
+                          console.log('❌ Modal individual cerrado sin completar');
+                          limpiarEstadoReasignacion();
+                      }
+                      modalElement.removeEventListener('hidden.bs.modal', onModalClose);
+                  });
+                  
+                  modal.show();
               }
-              
-              // Populate form fields
-              document.getElementById('employee_id').value = data.id || '';
-              document.getElementById('nombre').value = data.nombre || '';
-              document.getElementById('apellido_paterno').value = data.apellido_paterno || '';
-              document.getElementById('apellido_materno').value = data.apellido_materno || '';
-              document.getElementById('shortName').value = data.iniciales || '';
-              document.getElementById('correo').value = data.correo || '';
-              
-              // Set dropdown values
-              const puestoSelect = document.getElementById('puesto');
-              if (puestoSelect) {
-                Array.from(puestoSelect.options).forEach(option => {
-                  if (option.text.trim().toUpperCase() === (data.puesto || '').trim().toUpperCase()) {
-                    puestoSelect.value = option.value;
-                  }
+              document.querySelector('form').addEventListener('submit', function(e){
+              const estatusSelect = document.getElementById('estatus');
+              const empleadoId = document.getElementById('employee_id').value;
+
+              console.log('📝 Submit detectado - Estatus:', estatusSelect.value);
+
+              if(estatusSelect.value.toUpperCase() === "BAJA" && empleadoId && !procesoReasignacionCompletado){
+                  e.preventDefault();
+                  console.log('🛑 Submit bloqueado - Iniciando proceso de reasignación');
+                  
+                  formDataGlobal = new FormData(this);
+                  cargarClientesAsesor(empleadoId);
+                  return false;
+              }
+
+              if(estatusSelect.value.toUpperCase() === "BAJA" && procesoReasignacionCompletado){
+                  console.log('✅ Reasignación completada - Permitiendo submit');
+                  return true;
+              }
+
+              console.log('✅ Submit normal permitido');
+              return true;
+          });
+          const btnReasignacionIndividual = document.getElementById('btnReasignacionIndividual');
+            if (btnReasignacionIndividual) {
+                btnReasignacionIndividual.addEventListener('click', () => {
+                    mostrarModalRedistribucionIndividual();
                 });
-              }
-              
-              document.getElementById('categoria').value = data.categoria || '';
-              document.getElementById('meta').value = data.meta || '';
-              document.getElementById('equipo').value = data.equipo || '';
-              document.getElementById('apsi').value = data.apsi || '';
-              document.getElementById('notas').value = data.notas || '';
-              
-              // Set supervisor dropdown
-              const supervisorSelect = document.getElementById('supervisor');
-              if (supervisorSelect) {
-                Array.from(supervisorSelect.options).forEach(option => {
-                  if (option.text.trim().toUpperCase() === (data.supervisor || '').trim().toUpperCase()) {
-                    supervisorSelect.value = option.value;
-                  }
-                });
-              }
-              
-              // Set department dropdown
-              const departamentoSelect = document.getElementById('departamento');
-              if (departamentoSelect) {
-                Array.from(departamentoSelect.options).forEach(option => {
-                  if (option.text.trim().toUpperCase() === (data.departamento || '').trim().toUpperCase()) {
-                    departamentoSelect.value = option.value;
-                  }
-                });
-              }
-              
-              document.getElementById('clase').value = data.tipo || '';
-              document.getElementById('estatus').value = data.estado_empleado || '';
-              document.getElementById('birthDay').value = data.fecha_cumple || '';
-              document.getElementById('fecha_inicio').value = data.fecha_inicio || '';
-              document.getElementById('plantilla').checked = data.plantilla == 1;
-            })
-            .catch(error => {
-              console.error('Error:', error);
-              alert('Error al cargar los datos del empleado');
-            });
-        });
-
-        // ============================================
-        // EVENT LISTENERS: PROCESO DE BAJA
-        // ============================================
-        const estatusSelect = document.getElementById('estatus');
-        const formulario = document.querySelector('form');
-
-        estatusSelect.addEventListener('change', function (e) {
-            if (e.target.value === 'BAJA') {
-                console.log('🔴 Estado cambiado a BAJA');
-                e.preventDefault();
-
-                const employeeId = document.getElementById('employee_id').value;
-
-                if (!employeeId) {
-                    alert('⚠️ Por favor seleccione un empleado antes de intentar dar de baja.');
-                    e.target.value = '';
-                    return;
-                }
-
-                console.log('📋 Cargando clientes del asesor con ID:', employeeId);
-                cargarClientesAsesor(employeeId);
             }
-        });
 
-        formulario.addEventListener('submit', function (e) {
-            const estado = document.getElementById('estatus').value;
-
-            if (estado === 'BAJA') {
-                console.log('🛑 Envío de formulario interceptado (BAJA detectado)');
-                e.preventDefault();
-
-                const employeeId = document.getElementById('employee_id').value;
-
-                if (!employeeId) {
-                    alert('⚠️ Por favor seleccione un empleado antes de intentar dar de baja.');
-                    return;
-                }
-
-                console.log('📋 Iniciando proceso de baja para empleado:', employeeId);
-                cargarClientesAsesor(employeeId);
+            const btnReasignacionGrupo = document.getElementById('btnReasignacionGrupo');
+            if (btnReasignacionGrupo) {
+                btnReasignacionGrupo.addEventListener('click', () => {
+                    mostrarModalReasignacionGrupo();
+                });
             }
-        });
 
-        // ============================================
-        // EVENT LISTENERS: BOTONES DE REASIGNACIÓN
-        // ============================================
-        
-        // Botón "Reasignación en Grupo"
-        document.getElementById('btnReasignacionGrupo').addEventListener('click', function() {
-            console.log('👥 Botón Reasignación en Grupo clickeado');
-            mostrarModalReasignacionGrupo();
-        });
-
-        // Botón "Reasignación Individual"
-        document.getElementById('btnReasignacionIndividual').addEventListener('click', function() {
-            console.log('👤 Botón Reasignación Individual clickeado');
-            mostrarModalRedistribucionIndividual();
-        });
-
-        // 1️⃣ CONFIRMAR REASIGNACIÓN EN GRUPO
-        document.getElementById('confirmarReasignacionGrupo').addEventListener('click', function() {
-            console.log('🔄 [GRUPO] Botón confirmar clickeado');
-
-            const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
-            const nuevoAsesorId = parseInt(asesorGrupoSelect.value);
+            // Confirmación reasignación en grupo
+            const confirmarReasignacionGrupo = document.getElementById('confirmarReasignacionGrupo');
+            if (confirmarReasignacionGrupo) {
+                confirmarReasignacionGrupo.addEventListener('click', function() {
+                    const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
+                    const nuevoAsesorId = asesorGrupoSelect.value;
 
                     if (!nuevoAsesorId) {
                         asesorGrupoSelect.classList.add('is-invalid');
@@ -1934,7 +1829,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Confirmación reasignación individual
-            const confirmarReasignacion = document.getElementById('confirmarReasignacion');
+            const confirmarReasignacion = document.getElementById('confirmarRedistribucion');
             if (confirmarReasignacion) {
                 confirmarReasignacion.addEventListener('click', function() {
                     const selects = document.querySelectorAll('.reasignar-select');
