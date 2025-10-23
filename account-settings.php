@@ -1500,7 +1500,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 
-  <script>
+ <script>
       document.addEventListener('DOMContentLoaded', function() {
         // ============================================
         // VARIABLES GLOBALES
@@ -1777,12 +1777,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
             
             modal.show();
-        
+        }
 
         // ============================================
         // EVENT LISTENER: SELECCIONAR EMPLEADO PARA ACTUALIZAR
         // ============================================
-        document.getElementById('empleado-update').addEventListener('change', function(e) {
+        document.getElementById('update_user').addEventListener('change', function(e) {
           const selectedId = e.target.value;
           
           if (!selectedId) {
@@ -1812,7 +1812,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           console.log('Selected employee ID:', selectedId);
           
           // Fetch employee data
-          fetch(`get_empleado.php?id=${selectedId}`)
+          fetch(`get_employee.php?id=${selectedId}`)
             .then(response => response.json())
             .then(data => {
               console.log('Employee data received:', data);
@@ -2284,7 +2284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Initial load
         updatePresupuestoDropdown();
-     });
+      });
     </script>
     
     
