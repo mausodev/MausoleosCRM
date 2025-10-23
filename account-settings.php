@@ -1782,7 +1782,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ============================================
         // EVENT LISTENER: SELECCIONAR EMPLEADO PARA ACTUALIZAR
         // ============================================
-        document.getElementById('empleado-update').addEventListener('change', function(e) {
+        document.getElementById('update_use').addEventListener('change', function(e) {
           const selectedId = e.target.value;
           
           if (!selectedId) {
