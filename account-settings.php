@@ -1507,12 +1507,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         let clientesParaReasignar = [];
         let asesoresDisponibles = [];
         let procesoReasignacionCompletado = false;
+        let transicionandoEntreModales = false; // ⭐ NUEVA BANDERA
 
         function limpiarEstadoReasignacion() {
         formDataGlobal = null;
         clientesParaReasignar = [];
         asesoresDisponibles = [];
         procesoReasignacionCompletado = false;
+        transicionandoEntreModales = false; // ⭐ RESETEAR BANDERA
         }
 
             function cargarClientesAsesor(asesorId){
@@ -1586,9 +1588,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             const modalElement = document.getElementById('seleccionTipoModal');
 
+            // ⭐ MODIFICACIÓN CLAVE: Solo limpiar si NO estamos transicionando
             modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
-                console.log('❌ Modal de selección cerrado sin completar');
-                limpiarEstadoReasignacion();
+                if (!transicionandoEntreModales) {
+                    console.log('❌ Modal de selección cerrado sin completar');
+                    limpiarEstadoReasignacion();
+                } else {
+                    console.log('✅ Modal de selección cerrado - transicionando a otro modal');
+                }
                 // Remover este listener para no acumularlos
                 modalElement.removeEventListener('hidden.bs.modal', onModalClose);
             });
@@ -1631,26 +1638,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   listaClientesGrupo.appendChild(li);
               });
 
+              // ⭐ ACTIVAR BANDERA ANTES DE CERRAR
+              transicionandoEntreModales = true;
+              
               // Cerrar modal de selección
               const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
-              if (modalSeleccion) modalSeleccion.hide();
+              if (modalSeleccion) {
+                  modalSeleccion.hide();
+              }
 
-              // Abrir modal de grupo
-              const modal = new bootstrap.Modal(document.getElementById('reasignacionGrupoModal'));
-              
-              // ⭐ AGREGAR LISTENERS DE CANCELACIÓN
-              const modalElement = document.getElementById('reasignacionGrupoModal');
-              
-              modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
-                  // Solo limpiar si NO se completó el proceso
-                  if (!procesoReasignacionCompletado) {
-                      console.log('❌ Modal de grupo cerrado sin completar');
-                      limpiarEstadoReasignacion();
-                  }
-                  modalElement.removeEventListener('hidden.bs.modal', onModalClose);
-              });
-              
-              modal.show();
+              // ⭐ ESPERAR A QUE SE CIERRE COMPLETAMENTE ANTES DE ABRIR EL NUEVO
+              setTimeout(() => {
+                  transicionandoEntreModales = false; // ⭐ DESACTIVAR BANDERA
+                  
+                  // Abrir modal de grupo
+                  const modal = new bootstrap.Modal(document.getElementById('reasignacionGrupoModal'));
+                  
+                  // ⭐ AGREGAR LISTENERS DE CANCELACIÓN
+                  const modalElement = document.getElementById('reasignacionGrupoModal');
+                  
+                  modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
+                      // Solo limpiar si NO se completó el proceso
+                      if (!procesoReasignacionCompletado) {
+                          console.log('❌ Modal de grupo cerrado sin completar');
+                          limpiarEstadoReasignacion();
+                      }
+                      modalElement.removeEventListener('hidden.bs.modal', onModalClose);
+                  });
+                  
+                  modal.show();
+              }, 300); // Esperar 300ms para que el modal anterior se cierre
           }
 
               function mostrarModalRedistribucionIndividual() {
@@ -1663,57 +1680,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   clientesParaReasignar.forEach(cliente => {
                       const row = document.createElement('tr');
                       
-                      let opcionesAsesores = '<option value="">Seleccione un asesor...</option>';
-                      
-                      if (asesoresDisponibles.length === 0) {
-                          opcionesAsesores += '<option value="" disabled>No hay asesores disponibles</option>';
-                          console.warn('⚠️ No hay asesores disponibles para el cliente', cliente.id);
-                      } else {
-                          asesoresDisponibles.forEach(asesor => {
-                              opcionesAsesores += `
-                                  <option value="${asesor.id}">
-                                      ${asesor.correo} - ${asesor.puesto}
-                                  </option>
-                              `;
-                          });
-                      }
+                      const selectOptions = `
+                          <select class="form-select reasignar-select" data-cliente-id="${cliente.id}" required>
+                              <option value="">-- Seleccione un asesor --</option>
+                              ${asesoresDisponibles.map(asesor => `
+                                  <option value="${asesor.id}">${asesor.correo} - ${asesor.puesto}</option>
+                              `).join('')}
+                          </select>
+                      `;
 
                       row.innerHTML = `
                           <td>${cliente.id}</td>
                           <td>${cliente.nombre || 'Sin nombre'}</td>
-                          <td>
-                              <span class="badge bg-primary">${cliente.etapa || 'N/A'}</span>
-                          </td>
-                          <td>
-                              <select class="form-select reasignar-select" data-cliente-id="${cliente.id}" required>
-                                  ${opcionesAsesores}
-                              </select>
-                          </td>
+                          <td><span class="badge bg-info">${cliente.etapa || 'N/A'}</span></td>
+                          <td>${selectOptions}</td>
                       `;
+                      
                       tbody.appendChild(row);
                   });
 
+                  // ⭐ ACTIVAR BANDERA ANTES DE CERRAR
+                  transicionandoEntreModales = true;
+                  
                   // Cerrar modal de selección
                   const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
-                  if (modalSeleccion) modalSeleccion.hide();
+                  if (modalSeleccion) {
+                      modalSeleccion.hide();
+                  }
 
-                  // Abrir modal individual
-                  const modal = new bootstrap.Modal(document.getElementById('redistribucionModal'));
-                  
-                  // ⭐ AGREGAR LISTENERS DE CANCELACIÓN
-                  const modalElement = document.getElementById('redistribucionModal');
-                  
-                  modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
-                      // Solo limpiar si NO se completó el proceso
-                      if (!procesoReasignacionCompletado) {
-                          console.log('❌ Modal individual cerrado sin completar');
-                          limpiarEstadoReasignacion();
-                      }
-                      modalElement.removeEventListener('hidden.bs.modal', onModalClose);
-                  });
-                  
-                  modal.show();
+                  // ⭐ ESPERAR A QUE SE CIERRE COMPLETAMENTE ANTES DE ABRIR EL NUEVO
+                  setTimeout(() => {
+                      transicionandoEntreModales = false; // ⭐ DESACTIVAR BANDERA
+                      
+                      // Abrir modal individual
+                      const modal = new bootstrap.Modal(document.getElementById('redistribucionModal'));
+                      
+                      // ⭐ AGREGAR LISTENERS DE CANCELACIÓN
+                      const modalElement = document.getElementById('redistribucionModal');
+                      
+                      modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
+                          // Solo limpiar si NO se completó el proceso
+                          if (!procesoReasignacionCompletado) {
+                              console.log('❌ Modal individual cerrado sin completar');
+                              limpiarEstadoReasignacion();
+                          }
+                          modalElement.removeEventListener('hidden.bs.modal', onModalClose);
+                      });
+                      
+                      modal.show();
+                  }, 300); // Esperar 300ms para que el modal anterior se cierre
               }
+              
               document.querySelector('form').addEventListener('submit', function(e){
               const estatusSelect = document.getElementById('estatus');
               const empleadoId = document.getElementById('employee_id').value;
@@ -1770,9 +1787,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     this.disabled = true;
                     this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
 
+                    // ⭐ VALIDAR QUE clientesParaReasignar NO ESTÉ VACÍO
+                    if (clientesParaReasignar.length === 0) {
+                        alert('Error: No hay clientes para reasignar');
+                        this.disabled = false;
+                        this.innerHTML = btnOriginalText;
+                        return;
+                    }
+
                     const reasignaciones = clientesParaReasignar.map(cliente => ({
                         cliente_id: cliente.id,
-                        nuevo_asesor_id: nuevoAsesorId
+                        nuevo_asesor_id: parseInt(nuevoAsesorId)
                     }));
 
                     console.log('📤 Enviando reasignaciones en grupo:', reasignaciones);
@@ -1944,9 +1969,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             console.log('✅ Sistema de reasignación inicializado con control de cancelación');
 
-
-        
-        const updateUserSelect = document.getElementById('update_user');
+       const updateUserSelect = document.getElementById('update_user');
         console.log('Update user select found:', updateUserSelect);
         
         updateUserSelect.addEventListener('change', function() {
@@ -2308,6 +2331,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Initial load
         updatePresupuestoDropdown();
       });
+
+    
     </script>
     
     <?php if (!$acceso): ?>
