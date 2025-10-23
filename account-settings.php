@@ -65,7 +65,7 @@ $result_equipos = $stmt_equipos->get_result();
 
 $query_notificaciones_baja = "SELECT correo FROM empleado WHERE notificacion_baja = 1 and sucursal = ? and (puesto = 'EJECUTIVO' OR puesto = 'COORDINADOR DE TALENTO Y CULTURA' OR puesto = 'DIRECTOR' OR puesto = 'GERENTE');";
 $stmt_notificaciones_baja = $con->prepare($query_notificaciones_baja);
-$stmt_notificaciones_baja->bind_param("s",$sucursal);
+$stmt_notificaciones_baja->bind_param("s",$_SESSION['sucursal']);
 $stmt_notificaciones_baja -> execute();
 $result_notificaciones_baja = $stmt_notificaciones_baja -> get_result();
 
@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          if ($estado_empleado == 'BAJA') {
         
               // Verificar si tiene clientes asignados
-              $query_check_clients = "SELECT COUNT(*) as total FROM cliente WHERE asesor = ?";
+              $query_check_clients = "SELECT COUNT(*) as total FROM cliente WHERE asesor = ? AND etapa NOT IN ('CERRADO PERDIDO', 'CERRADO GANADO') ";
               $stmt_check = $con->prepare($query_check_clients);
               $stmt_check->bind_param("i", $employee_id);
               $stmt_check->execute();
@@ -1500,607 +1500,617 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 
-    <script>
+  <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Handle update user selection
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
         let formDataGlobal = null;
         let clientesParaReasignar = [];
         let asesoresDisponibles = [];
         let procesoReasignacionCompletado = false;
+        let employeeIdParaBaja = null;
 
+        // Variables para presupuesto
+        const ventaPuestoSelect = document.getElementById('puesto_venta');
+        const presupuestoSelect = document.getElementById('presupuesto_empleado');
+        const presupuestoTable = document.getElementById('presupuesto_table');
+        const presupuestoTableBody = document.getElementById('presupuesto_body');
+        const idHeader = document.getElementById('id_header');
+
+        const months = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+
+        // ============================================
+        // FUNCIONES DE LIMPIEZA
+        // ============================================
         function limpiarEstadoReasignacion() {
-        formDataGlobal = null;
-        clientesParaReasignar = [];
-        asesoresDisponibles = [];
-        procesoReasignacionCompletado = false;
+            formDataGlobal = null;
+            clientesParaReasignar = [];
+            asesoresDisponibles = [];
+            procesoReasignacionCompletado = false;
+            employeeIdParaBaja = null;
         }
 
-            function cargarClientesAsesor(asesorId){
-                console.log('📥 Cargando clientes para asesor:', asesorId);
-                
-                fetch(`get_clientes_asesor.php?asesor_id=${asesorId}`)
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        return response.text().then(text => {
-                            console.log('Raw response:', text.substring(0, 200));
-                            try {
-                                return JSON.parse(text);
-                            } catch (e) {
-                                console.error('❌ Error parsing JSON:', e);
-                                throw new Error('El servidor no devolvió JSON válido');
-                            }
-                        });
-                    })
-                    .then(data => {
-                        console.log("✅ DATA COMPLETA RECIBIDA:", data);
-                        
-                        if(data.success){
-                            if (data.clientes.length === 0) {
-                                // No hay clientes - marcar como completado y enviar
-                                console.log('ℹ️ No hay clientes - Permitiendo baja directa');
-                                procesoReasignacionCompletado = true;
-                                alert('El empleado no tiene clientes asignados. Procediendo con la baja.');
-                                document.querySelector('form').submit();
-                            } else {
-                                // Hay clientes - mostrar modal
-                                clientesParaReasignar = data.clientes;
-                                asesoresDisponibles = data.asesores || [];
-                                console.log('📋 Clientes cargados:', clientesParaReasignar.length);
-                                console.log('👥 Asesores disponibles:', asesoresDisponibles.length);
-                                mostrarModalSeleccionTipo(data.clientes.length);
-                            }
-                        } else {
-                            console.error('❌ Error en respuesta:', data);
-                            limpiarEstadoReasignacion(); // ⭐ Limpiar en caso de error
-                            alert('Error al cargar clientes: ' + (data.error || 'Error desconocido'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ ERROR COMPLETO:', error);
-                        limpiarEstadoReasignacion(); // ⭐ Limpiar en caso de error
-                        alert('Error al cargar los clientes del asesor: ' + error.message);
-                    });
+        // ============================================
+        // FUNCIONES DE REASIGNACIÓN Y BAJA
+        // ============================================
+        
+        // 🆕 NUEVA FUNCIÓN: Dar de baja al empleado mediante AJAX
+        function darDeBajaEmpleado() {
+            console.log('🔻 Iniciando proceso de baja del empleado:', employeeIdParaBaja);
+            
+            if (!employeeIdParaBaja) {
+                console.error('❌ No hay ID de empleado para dar de baja');
+                alert('Error: No se pudo identificar el empleado a dar de baja');
+                return;
             }
+            
+            const loadingMsg = 'Procesando baja del empleado...';
+            console.log('⏳', loadingMsg);
+            
+            fetch('dar_baja_empleado.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    employee_id: employeeIdParaBaja
+                })
+            })
+            .then(response => response.text())
+            .then(text => {
+                console.log('📥 Respuesta de baja:', text);
+                
+                try {
+                    const data = JSON.parse(text);
+                    
+                    if (data.success) {
+                        console.log('✅ Empleado dado de baja exitosamente');
+                        
+                        alert('✅ Proceso completado exitosamente:\n\n' +
+                              '• Clientes reasignados correctamente\n' +
+                              '• Empleado dado de baja: ' + (data.empleado || '') + '\n\n' +
+                              'La página se recargará para reflejar los cambios.');
+                        
+                        limpiarEstadoReasignacion();
+                        
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                        
+                    } else {
+                        console.error('❌ Error al dar de baja:', data.error);
+                        alert('❌ Los clientes fueron reasignados correctamente, pero ocurrió un error al dar de baja al empleado:\n\n' + data.error + '\n\nPor favor, inténtelo nuevamente desde el formulario.');
+                        
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    }
+                } catch (e) {
+                    console.error('❌ Error al parsear respuesta de baja:', e);
+                    alert('❌ Error al procesar la respuesta del servidor. Por favor, verifique el estado del empleado.');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error en petición de baja:', error);
+                alert('❌ Error al conectar con el servidor para dar de baja al empleado:\n\n' + error.message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            });
+        }
 
-          function mostrarModalSeleccionTipo(totalClientes){
+        function cargarClientesAsesor(asesorId){
+            console.log('📥 Cargando clientes para asesor:', asesorId);
+            
+            employeeIdParaBaja = asesorId;
+            
+            fetch(`get_clientes_asesor.php?asesor_id=${asesorId}`)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    return response.text().then(text => {
+                        console.log('Raw response:', text.substring(0, 200));
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            console.error('❌ Error parsing JSON:', e);
+                            throw new Error('El servidor no devolvió JSON válido');
+                        }
+                    });
+                })
+                .then(data => {
+                    console.log("✅ DATA COMPLETA RECIBIDA:", data);
+                    
+                    if(data.success){
+                        if (data.clientes.length === 0) {
+                            console.log('ℹ️ No hay clientes - Dando de baja directamente');
+                            procesoReasignacionCompletado = true;
+                            darDeBajaEmpleado();
+                        } else {
+                            clientesParaReasignar = data.clientes;
+                            asesoresDisponibles = data.asesores || [];
+                            console.log('📋 Clientes cargados:', clientesParaReasignar.length);
+                            console.log('👥 Asesores disponibles:', asesoresDisponibles.length);
+                            mostrarModalSeleccionTipo(data.clientes.length);
+                        }
+                    } else {
+                        console.error('❌ Error en respuesta:', data);
+                        limpiarEstadoReasignacion();
+                        alert('Error al cargar clientes: ' + (data.error || 'Error desconocido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ ERROR COMPLETO:', error);
+                    limpiarEstadoReasignacion();
+                    alert('Error al cargar los clientes del asesor: ' + error.message);
+                });
+        }
+
+        function mostrarModalSeleccionTipo(totalClientes){
             document.getElementById('totalClientesSeleccion').textContent = totalClientes;
             const modal = new bootstrap.Modal(document.getElementById('seleccionTipoModal'));
-
             const modalElement = document.getElementById('seleccionTipoModal');
-
+            
             modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
                 console.log('❌ Modal de selección cerrado sin completar');
                 limpiarEstadoReasignacion();
-                // Remover este listener para no acumularlos
                 modalElement.removeEventListener('hidden.bs.modal', onModalClose);
             });
+            
             modal.show();
-          }
+        }
 
-            function mostrarModalReasignacionGrupo() {
-              const totalClientesGrupo = document.getElementById('totalClientesGrupo');
-              const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
-              const listaClientesGrupo = document.getElementById('listaClientesGrupo');
+        function mostrarModalReasignacionGrupo() {
+            const totalClientesGrupo = document.getElementById('totalClientesGrupo');
+            const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
+            const listaClientesGrupo = document.getElementById('listaClientesGrupo');
 
-              totalClientesGrupo.textContent = clientesParaReasignar.length;
+            totalClientesGrupo.textContent = clientesParaReasignar.length;
 
-              // Llenar select de asesores
-              asesorGrupoSelect.innerHTML = '<option value="">-- Seleccione un asesor --</option>';
-              
-              if (asesoresDisponibles.length === 0) {
-                  asesorGrupoSelect.innerHTML += '<option value="" disabled>No hay asesores disponibles</option>';
-                  console.warn('⚠️ No hay asesores disponibles');
-              } else {
-                  asesoresDisponibles.forEach(asesor => {
-                      const option = document.createElement('option');
-                      option.value = asesor.id;
-                      option.textContent = `${asesor.correo} - ${asesor.puesto}`;
-                      asesorGrupoSelect.appendChild(option);
-                  });
-              }
-
-              // Llenar lista de clientes
-              listaClientesGrupo.innerHTML = '';
-              clientesParaReasignar.forEach(cliente => {
-                  const li = document.createElement('li');
-                  li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                  li.innerHTML = `
-                      <div>
-                          <strong>#${cliente.id}</strong> - ${cliente.nombre || 'Sin nombre'}
-                      </div>
-                      <span class="badge bg-primary rounded-pill">${cliente.etapa || 'N/A'}</span>
-                  `;
-                  listaClientesGrupo.appendChild(li);
-              });
-
-              // Cerrar modal de selección
-              const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
-              if (modalSeleccion) modalSeleccion.hide();
-
-              // Abrir modal de grupo
-              const modal = new bootstrap.Modal(document.getElementById('reasignacionGrupoModal'));
-              
-              // ⭐ AGREGAR LISTENERS DE CANCELACIÓN
-              const modalElement = document.getElementById('reasignacionGrupoModal');
-              
-              modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
-                  // Solo limpiar si NO se completó el proceso
-                  if (!procesoReasignacionCompletado) {
-                      console.log('❌ Modal de grupo cerrado sin completar');
-                      limpiarEstadoReasignacion();
-                  }
-                  modalElement.removeEventListener('hidden.bs.modal', onModalClose);
-              });
-              
-              modal.show();
-          }
-
-              function mostrarModalRedistribucionIndividual() {
-                  const tbody = document.getElementById('clientesTableBody');
-                  const totalClientes = document.getElementById('totalClientes');
-
-                  totalClientes.textContent = clientesParaReasignar.length;
-                  tbody.innerHTML = '';
-
-                  clientesParaReasignar.forEach(cliente => {
-                      const row = document.createElement('tr');
-                      
-                      let opcionesAsesores = '<option value="">Seleccione un asesor...</option>';
-                      
-                      if (asesoresDisponibles.length === 0) {
-                          opcionesAsesores += '<option value="" disabled>No hay asesores disponibles</option>';
-                          console.warn('⚠️ No hay asesores disponibles para el cliente', cliente.id);
-                      } else {
-                          asesoresDisponibles.forEach(asesor => {
-                              opcionesAsesores += `
-                                  <option value="${asesor.id}">
-                                      ${asesor.correo} - ${asesor.puesto}
-                                  </option>
-                              `;
-                          });
-                      }
-
-                      row.innerHTML = `
-                          <td>${cliente.id}</td>
-                          <td>${cliente.nombre || 'Sin nombre'}</td>
-                          <td>
-                              <span class="badge bg-primary">${cliente.etapa || 'N/A'}</span>
-                          </td>
-                          <td>
-                              <select class="form-select reasignar-select" data-cliente-id="${cliente.id}" required>
-                                  ${opcionesAsesores}
-                              </select>
-                          </td>
-                      `;
-                      tbody.appendChild(row);
-                  });
-
-                  // Cerrar modal de selección
-                  const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
-                  if (modalSeleccion) modalSeleccion.hide();
-
-                  // Abrir modal individual
-                  const modal = new bootstrap.Modal(document.getElementById('redistribucionModal'));
-                  
-                  // ⭐ AGREGAR LISTENERS DE CANCELACIÓN
-                  const modalElement = document.getElementById('redistribucionModal');
-                  
-                  modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
-                      // Solo limpiar si NO se completó el proceso
-                      if (!procesoReasignacionCompletado) {
-                          console.log('❌ Modal individual cerrado sin completar');
-                          limpiarEstadoReasignacion();
-                      }
-                      modalElement.removeEventListener('hidden.bs.modal', onModalClose);
-                  });
-                  
-                  modal.show();
-              }
-              document.querySelector('form').addEventListener('submit', function(e){
-              const estatusSelect = document.getElementById('estatus');
-              const empleadoId = document.getElementById('employee_id').value;
-
-              console.log('📝 Submit detectado - Estatus:', estatusSelect.value);
-
-              if(estatusSelect.value.toUpperCase() === "BAJA" && empleadoId && !procesoReasignacionCompletado){
-                  e.preventDefault();
-                  console.log('🛑 Submit bloqueado - Iniciando proceso de reasignación');
-                  
-                  formDataGlobal = new FormData(this);
-                  cargarClientesAsesor(empleadoId);
-                  return false;
-              }
-
-              if(estatusSelect.value.toUpperCase() === "BAJA" && procesoReasignacionCompletado){
-                  console.log('✅ Reasignación completada - Permitiendo submit');
-                  return true;
-              }
-
-              console.log('✅ Submit normal permitido');
-              return true;
-          });
-          const btnReasignacionIndividual = document.getElementById('btnReasignacionIndividual');
-            if (btnReasignacionIndividual) {
-                btnReasignacionIndividual.addEventListener('click', () => {
-                    mostrarModalRedistribucionIndividual();
-                });
-            }
-
-            const btnReasignacionGrupo = document.getElementById('btnReasignacionGrupo');
-            if (btnReasignacionGrupo) {
-                btnReasignacionGrupo.addEventListener('click', () => {
-                    mostrarModalReasignacionGrupo();
-                });
-            }
-
-            // Confirmación reasignación en grupo
-            const confirmarReasignacionGrupo = document.getElementById('confirmarReasignacionGrupo');
-            if (confirmarReasignacionGrupo) {
-                confirmarReasignacionGrupo.addEventListener('click', function() {
-                    const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
-                    const nuevoAsesorId = asesorGrupoSelect.value;
-
-                    if (!nuevoAsesorId) {
-                        asesorGrupoSelect.classList.add('is-invalid');
-                        alert('Por favor, seleccione un asesor.');
-                        return;
-                    }
-
-                    asesorGrupoSelect.classList.remove('is-invalid');
-
-                    const btnOriginalText = this.innerHTML;
-                    this.disabled = true;
-                    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
-
-                    const reasignaciones = clientesParaReasignar.map(cliente => ({
-                        cliente_id: cliente.id,
-                        nuevo_asesor_id: nuevoAsesorId
-                    }));
-
-                    console.log('📤 Enviando reasignaciones en grupo:', reasignaciones);
-
-                    fetch('reasignar_clientes.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            reasignaciones: reasignaciones
-                        })
-                    })
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        return response.text().then(text => {
-                            console.log('Raw response:', text.substring(0, 200));
-                            try {
-                                return JSON.parse(text);
-                            } catch (e) {
-                                console.error('❌ Error parsing JSON:', e);
-                                throw new Error('Error en la respuesta del servidor');
-                            }
-                        });
-                    })
-                    .then(data => {
-                        console.log('✅ Respuesta del servidor:', data);
-                        
-                        if (data.success) {
-                            procesoReasignacionCompletado = true;
-                            console.log('✅ Reasignación completada exitosamente');
-                            
-                            alert(data.message || 'Clientes reasignados exitosamente');
-                            
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('reasignacionGrupoModal'));
-                            if (modal) modal.hide();
-                            
-                            setTimeout(() => {
-                                console.log('📤 Enviando formulario de baja del empleado');
-                                document.querySelector('form').submit();
-                            }, 500);
-                        } else {
-                            throw new Error(data.error || 'Error al reasignar clientes');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Error:', error);
-                        alert('Error: ' + error.message);
-                        
-                        this.disabled = false;
-                        this.innerHTML = btnOriginalText;
-                    });
-                });
-            }
-
-            // Confirmación reasignación individual
-            const confirmarReasignacion = document.getElementById('confirmarReasignacion');
-            if (confirmarReasignacion) {
-                confirmarReasignacion.addEventListener('click', function() {
-                    const selects = document.querySelectorAll('.reasignar-select');
-                    const reasignaciones = [];
-                    let todosCompletos = true;
-
-                    selects.forEach(select => {
-                        if (!select.value) {
-                            select.classList.add('is-invalid');
-                            todosCompletos = false;
-                        } else {
-                            select.classList.remove('is-invalid');
-                            reasignaciones.push({
-                                cliente_id: parseInt(select.dataset.clienteId),
-                                nuevo_asesor_id: parseInt(select.value)
-                            });
-                        }
-                    });
-
-                    if (!todosCompletos) {
-                        alert('Por favor, seleccione un asesor para cada cliente.');
-                        return;
-                    }
-
-                    const btnOriginalText = this.innerHTML;
-                    this.disabled = true;
-                    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
-
-                    console.log('📤 Enviando reasignaciones individuales:', reasignaciones);
-
-                    fetch('reasignar_clientes.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            reasignaciones: reasignaciones
-                        })
-                    })
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        return response.text().then(text => {
-                            console.log('Raw response:', text.substring(0, 200));
-                            try {
-                                return JSON.parse(text);
-                            } catch (e) {
-                                console.error('❌ Error parsing JSON:', e);
-                                throw new Error('Error en la respuesta del servidor');
-                            }
-                        });
-                    })
-                    .then(data => {
-                        console.log('✅ Respuesta del servidor:', data);
-                        
-                        if (data.success) {
-                            procesoReasignacionCompletado = true;
-                            console.log('✅ Reasignación completada exitosamente');
-                            
-                            alert(data.message || 'Clientes reasignados exitosamente');
-                            
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('redistribucionModal'));
-                            if (modal) modal.hide();
-                            
-                            setTimeout(() => {
-                                console.log('📤 Enviando formulario de baja del empleado');
-                                document.querySelector('form').submit();
-                            }, 500);
-                        } else {
-                            throw new Error(data.error || 'Error al reasignar clientes');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Error:', error);
-                        alert('Error: ' + error.message);
-                        
-                        this.disabled = false;
-                        this.innerHTML = btnOriginalText;
-                    });
-                });
-            }
-
-            // Botones de cancelar (si existen)
-            const btnCancelarSeleccion = document.getElementById('btnCancelarSeleccion');
-            if (btnCancelarSeleccion) {
-                btnCancelarSeleccion.addEventListener('click', function() {
-                    console.log('❌ Usuario canceló en modal de selección');
-                    limpiarEstadoReasignacion();
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
-                    if (modal) modal.hide();
-                });
-            }
-
-            const btnCancelarGrupo = document.getElementById('btnCancelarGrupo');
-            if (btnCancelarGrupo) {
-                btnCancelarGrupo.addEventListener('click', function() {
-                    console.log('❌ Usuario canceló en modal de grupo');
-                    limpiarEstadoReasignacion();
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('reasignacionGrupoModal'));
-                    if (modal) modal.hide();
-                });
-            }
-
-            const btnCancelarIndividual = document.getElementById('btnCancelarIndividual');
-            if (btnCancelarIndividual) {
-                btnCancelarIndividual.addEventListener('click', function() {
-                    console.log('❌ Usuario canceló en modal individual');
-                    limpiarEstadoReasignacion();
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('redistribucionModal'));
-                    if (modal) modal.hide();
-                });
-            }
-
-            console.log('✅ Sistema de reasignación inicializado con control de cancelación');
-
-
-        
-        const updateUserSelect = document.getElementById('update_user');
-        console.log('Update user select found:', updateUserSelect);
-        
-        updateUserSelect.addEventListener('change', function() {
-            const employeeId = this.value;
-            console.log('Selected employee ID:', employeeId);
+            asesorGrupoSelect.innerHTML = '<option value="">-- Seleccione un asesor --</option>';
             
-            if (employeeId) {
-                console.log('Fetching employee data for ID:', employeeId);
-                // Fetch employee data and populate form
-                fetch(`./get_employee.php?id=${employeeId}`)
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Employee data received:', data);
-                        
-                        // Check if each field exists before setting value
-                        const fields = [
-                            { id: 'employee_id', value: data.id },
-                            { id: 'nombre', value: data.nombre },
-                            { id: 'apellido_paterno', value: data.apellido_paterno },
-                            { id: 'apellido_materno', value: data.apellido_materno },
-                            { id: 'correo', value: data.correo },
-                            { id: 'puesto', value: data.puesto },
-                            { id: 'categoria', value: data.categoria },
-                            { id: 'meta', value: data.meta },
-                            { id: 'equipo', value: data.equipo },
-                            { id: 'apsi', value: data.apsi },
-                            { id: 'notas', value: data.notas },
-                            { id: 'supervisor', value: data.id_supervisor },
-                            { id: 'estatus', value: data.estado_empleado || 'Activo' },
-                            { id: 'shortName', value: data.iniciales },
-                            { id: 'departamento', value: data.departamento },
-                            { id: 'clase', value: data.tipo || data.clase }, // Try both possible field names
-                            { id: 'plantilla', value: data.plantilla},
-                            { id: 'id_supervisor', value: data.id_supervisor || 0}
-                        ];
-                        
-                        fields.forEach(field => {
-                            const element = document.getElementById(field.id);
-                            if (element) {
-                                if (field.value !== null && field.value !== undefined) {
-                                    // Convert text fields to uppercase
-                                    if (element.type === 'text' || element.type === 'email' || element.tagName === 'TEXTAREA') {
-                                        element.value = field.value.toUpperCase();
-                                    } else {
-                                        element.value = field.value;
-                                    }
-                                    console.log(`Set ${field.id} to:`, element.value);
-                                } else {
-                                    console.log(`Skipping ${field.id} - value is null/undefined`);
-                                }
-                            } else {
-                                console.error(`Element with id '${field.id}' not found`);
-                            }
-                        });
-                        
-                        // Handle date fields separately
-                        if (data.fecha_cumple || data.fecha_nacimiento) {
-                            const birthDayElement = document.getElementById('birthDay');
-                            if (birthDayElement) {
-                                const birthDate = data.fecha_cumple || data.fecha_nacimiento;
-                                birthDayElement.value = birthDate;
-                                console.log('Set birthDay to:', birthDate);
-                            }
-                        }
-                        
-                        if (data.fecha_inicio) {
-                            const fechaInicioElement = document.getElementById('fecha_inicio');
-                            if (fechaInicioElement) {
-                                fechaInicioElement.value = data.fecha_inicio;
-                                console.log('Set fecha_inicio to:', data.fecha_inicio);
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching employee data:', error);
-                        console.error('Error details:', {
-                            name: error.name,
-                            message: error.message,
-                            stack: error.stack
-                        });
-                        alert('Error al cargar los datos del empleado: ' + error.message);
-                    });
+            if (asesoresDisponibles.length === 0) {
+                asesorGrupoSelect.innerHTML += '<option value="" disabled>No hay asesores disponibles</option>';
+                console.warn('⚠️ No hay asesores disponibles');
             } else {
-                console.log('Clearing form for new employee');
-                // Clear form for new employee
-                const employeeIdElement = document.getElementById('employee_id');
-                if (employeeIdElement) {
-                    employeeIdElement.value = '';
+                asesoresDisponibles.forEach(asesor => {
+                    const option = document.createElement('option');
+                    option.value = asesor.id;
+                    option.textContent = `${asesor.correo} - ${asesor.puesto}`;
+                    asesorGrupoSelect.appendChild(option);
+                });
+            }
+
+            listaClientesGrupo.innerHTML = '';
+            clientesParaReasignar.forEach(cliente => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <div>
+                        <strong>#${cliente.id}</strong> - ${cliente.nombre || 'Sin nombre'}
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${cliente.etapa || 'N/A'}</span>
+                `;
+                listaClientesGrupo.appendChild(li);
+            });
+
+            const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
+            if (modalSeleccion) modalSeleccion.hide();
+
+            const modal = new bootstrap.Modal(document.getElementById('reasignacionGrupoModal'));
+            const modalElement = document.getElementById('reasignacionGrupoModal');
+            
+            modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
+                if (!procesoReasignacionCompletado) {
+                    console.log('❌ Modal de grupo cerrado sin completar');
+                    limpiarEstadoReasignacion();
                 }
-                document.querySelector('form').reset();
-            }
-        });
-        
-        // Add validation for meta based on puesto
-        const puestoSelect = document.getElementById('puesto');
-        const metaInput = document.getElementById('meta');
-        
-        function validateMeta() {
-            const puestoText = puestoSelect.options[puestoSelect.selectedIndex].text;
-            if (puestoText === 'ASESOR' || puestoText === 'COORDINADOR') {
-                metaInput.required = true;
-                metaInput.setAttribute('min', '0.01');
-            } else {
-                metaInput.required = false;
-                metaInput.removeAttribute('min');
-            }
-        }
-        
-        puestoSelect.addEventListener('change', validateMeta);
-        validateMeta(); // Run on page load
-        
-        // Handle form submission validation
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const puestoText = puestoSelect.options[puestoSelect.selectedIndex].text;
-            const metaValue = parseFloat(metaInput.value) || 0;
+                modalElement.removeEventListener('hidden.bs.modal', onModalClose);
+            });
             
-            if ((puestoText === 'ASESOR' || puestoText === 'COORDINADOR') && metaValue <= 0) {
-                e.preventDefault();
-                alert('El presupuesto anual es obligatorio para el puesto de ' + puestoText);
-                metaInput.focus();
-                return false;
-            }
-        });
-        
-        // Handle sucursal field based on user role
-        const sucursalInput = document.querySelector('input[name="sucursal"]');
-        const userRole = '<?php echo $puesto; ?>';
-        
-        if (userRole !== 'SISTEMAS' && sucursalInput) {
-            sucursalInput.disabled = true;
+            modal.show();
         }
 
-        // Convert text fields to uppercase on input
-        const textFields = document.querySelectorAll('input[type="text"], input[type="email"], textarea');
-        textFields.forEach(field => {
-            field.addEventListener('input', function() {
-                this.value = this.value.toUpperCase();
+        function mostrarModalRedistribucionIndividual() {
+            const tbody = document.getElementById('clientesTableBody');
+            const totalClientes = document.getElementById('totalClientes');
+
+            totalClientes.textContent = clientesParaReasignar.length;
+            tbody.innerHTML = '';
+
+            clientesParaReasignar.forEach(cliente => {
+                const row = document.createElement('tr');
+                
+                let opcionesAsesores = '<option value="">Seleccione un asesor...</option>';
+                
+                if (asesoresDisponibles.length === 0) {
+                    opcionesAsesores += '<option value="" disabled>No hay asesores disponibles</option>';
+                    console.warn('⚠️ No hay asesores disponibles para el cliente', cliente.id);
+                } else {
+                    asesoresDisponibles.forEach(asesor => {
+                        opcionesAsesores += `
+                            <option value="${asesor.id}">
+                                ${asesor.correo} - ${asesor.puesto}
+                            </option>
+                        `;
+                    });
+                }
+
+                row.innerHTML = `
+                    <td>${cliente.id}</td>
+                    <td>${cliente.nombre || 'Sin nombre'}</td>
+                    <td>
+                        <span class="badge bg-primary">${cliente.etapa || 'N/A'}</span>
+                    </td>
+                    <td>
+                        <select class="form-select asesor-select-individual" data-cliente-id="${cliente.id}" required>
+                            ${opcionesAsesores}
+                        </select>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const modalSeleccion = bootstrap.Modal.getInstance(document.getElementById('seleccionTipoModal'));
+            if (modalSeleccion) modalSeleccion.hide();
+
+            const modal = new bootstrap.Modal(document.getElementById('redistribucionModal'));
+            const modalElement = document.getElementById('redistribucionModal');
+            
+            modalElement.addEventListener('hidden.bs.modal', function onModalClose() {
+                if (!procesoReasignacionCompletado) {
+                    console.log('❌ Modal individual cerrado sin completar');
+                    limpiarEstadoReasignacion();
+                }
+                modalElement.removeEventListener('hidden.bs.modal', onModalClose);
+            });
+            
+            modal.show();
+        
+
+        // ============================================
+        // EVENT LISTENER: SELECCIONAR EMPLEADO PARA ACTUALIZAR
+        // ============================================
+        document.getElementById('empleado-update').addEventListener('change', function(e) {
+          const selectedId = e.target.value;
+          
+          if (!selectedId) {
+            // Si se deselecciona, limpiar el formulario
+            document.getElementById('employee_id').value = '';
+            document.getElementById('nombre').value = '';
+            document.getElementById('apellido_paterno').value = '';
+            document.getElementById('apellido_materno').value = '';
+            document.getElementById('shortName').value = '';
+            document.getElementById('correo').value = '';
+            document.getElementById('puesto').value = '';
+            document.getElementById('categoria').value = '';
+            document.getElementById('meta').value = '';
+            document.getElementById('equipo').value = '';
+            document.getElementById('apsi').value = '';
+            document.getElementById('notas').value = '';
+            document.getElementById('supervisor').value = '';
+            document.getElementById('departamento').value = '';
+            document.getElementById('clase').value = '';
+            document.getElementById('estatus').value = '';
+            document.getElementById('birthDay').value = '';
+            document.getElementById('fecha_inicio').value = '';
+            document.getElementById('plantilla').checked = false;
+            return;
+          }
+          
+          console.log('Selected employee ID:', selectedId);
+          
+          // Fetch employee data
+          fetch(`get_empleado.php?id=${selectedId}`)
+            .then(response => response.json())
+            .then(data => {
+              console.log('Employee data received:', data);
+              
+              if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+              }
+              
+              // Populate form fields
+              document.getElementById('employee_id').value = data.id || '';
+              document.getElementById('nombre').value = data.nombre || '';
+              document.getElementById('apellido_paterno').value = data.apellido_paterno || '';
+              document.getElementById('apellido_materno').value = data.apellido_materno || '';
+              document.getElementById('shortName').value = data.iniciales || '';
+              document.getElementById('correo').value = data.correo || '';
+              
+              // Set dropdown values
+              const puestoSelect = document.getElementById('puesto');
+              if (puestoSelect) {
+                Array.from(puestoSelect.options).forEach(option => {
+                  if (option.text.trim().toUpperCase() === (data.puesto || '').trim().toUpperCase()) {
+                    puestoSelect.value = option.value;
+                  }
+                });
+              }
+              
+              document.getElementById('categoria').value = data.categoria || '';
+              document.getElementById('meta').value = data.meta || '';
+              document.getElementById('equipo').value = data.equipo || '';
+              document.getElementById('apsi').value = data.apsi || '';
+              document.getElementById('notas').value = data.notas || '';
+              
+              // Set supervisor dropdown
+              const supervisorSelect = document.getElementById('supervisor');
+              if (supervisorSelect) {
+                Array.from(supervisorSelect.options).forEach(option => {
+                  if (option.text.trim().toUpperCase() === (data.supervisor || '').trim().toUpperCase()) {
+                    supervisorSelect.value = option.value;
+                  }
+                });
+              }
+              
+              // Set department dropdown
+              const departamentoSelect = document.getElementById('departamento');
+              if (departamentoSelect) {
+                Array.from(departamentoSelect.options).forEach(option => {
+                  if (option.text.trim().toUpperCase() === (data.departamento || '').trim().toUpperCase()) {
+                    departamentoSelect.value = option.value;
+                  }
+                });
+              }
+              
+              document.getElementById('clase').value = data.tipo || '';
+              document.getElementById('estatus').value = data.estado_empleado || '';
+              document.getElementById('birthDay').value = data.fecha_cumple || '';
+              document.getElementById('fecha_inicio').value = data.fecha_inicio || '';
+              document.getElementById('plantilla').checked = data.plantilla == 1;
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Error al cargar los datos del empleado');
             });
         });
 
-        // Add this new code for presupuesto functionality
-        const ventaPuestoSelect = document.getElementById('venta_puesto');
-        const presupuestoSelect = document.getElementById('presupuesto');
-        const presupuestoTable = document.getElementById('presupuestoTable');
-        const presupuestoTableBody = document.getElementById('presupuestoTableBody');
-        const idHeader = document.getElementById('idHeader');
+        // ============================================
+        // EVENT LISTENERS: PROCESO DE BAJA
+        // ============================================
+        const estatusSelect = document.getElementById('estatus');
+        const formulario = document.querySelector('form');
 
-        // Define months array in global scope
-        const months = [
-            'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
-        ];
+        estatusSelect.addEventListener('change', function (e) {
+            if (e.target.value === 'BAJA') {
+                console.log('🔴 Estado cambiado a BAJA');
+                e.preventDefault();
 
-        // Function to update presupuesto dropdown
+                const employeeId = document.getElementById('employee_id').value;
+
+                if (!employeeId) {
+                    alert('⚠️ Por favor seleccione un empleado antes de intentar dar de baja.');
+                    e.target.value = '';
+                    return;
+                }
+
+                console.log('📋 Cargando clientes del asesor con ID:', employeeId);
+                cargarClientesAsesor(employeeId);
+            }
+        });
+
+        formulario.addEventListener('submit', function (e) {
+            const estado = document.getElementById('estatus').value;
+
+            if (estado === 'BAJA') {
+                console.log('🛑 Envío de formulario interceptado (BAJA detectado)');
+                e.preventDefault();
+
+                const employeeId = document.getElementById('employee_id').value;
+
+                if (!employeeId) {
+                    alert('⚠️ Por favor seleccione un empleado antes de intentar dar de baja.');
+                    return;
+                }
+
+                console.log('📋 Iniciando proceso de baja para empleado:', employeeId);
+                cargarClientesAsesor(employeeId);
+            }
+        });
+
+        // ============================================
+        // EVENT LISTENERS: BOTONES DE REASIGNACIÓN
+        // ============================================
+        
+        // Botón "Reasignación en Grupo"
+        document.getElementById('btnReasignacionGrupo').addEventListener('click', function() {
+            console.log('👥 Botón Reasignación en Grupo clickeado');
+            mostrarModalReasignacionGrupo();
+        });
+
+        // Botón "Reasignación Individual"
+        document.getElementById('btnReasignacionIndividual').addEventListener('click', function() {
+            console.log('👤 Botón Reasignación Individual clickeado');
+            mostrarModalRedistribucionIndividual();
+        });
+
+        // 1️⃣ CONFIRMAR REASIGNACIÓN EN GRUPO
+        document.getElementById('confirmarReasignacionGrupo').addEventListener('click', function() {
+            console.log('🔄 [GRUPO] Botón confirmar clickeado');
+
+            const asesorGrupoSelect = document.getElementById('asesorGrupoSelect');
+            const nuevoAsesorId = parseInt(asesorGrupoSelect.value);
+
+            console.log('👤 Nuevo asesor seleccionado:', nuevoAsesorId);
+
+            if (!nuevoAsesorId || nuevoAsesorId <= 0 || isNaN(nuevoAsesorId)) {
+                alert('⚠️ Por favor seleccione un asesor válido');
+                asesorGrupoSelect.classList.add('is-invalid');
+                console.error('❌ Asesor no válido');
+                return;
+            }
+
+            asesorGrupoSelect.classList.remove('is-invalid');
+
+            const reasignaciones = clientesParaReasignar.map(cliente => ({
+                cliente_id: cliente.id,
+                nuevo_asesor_id: nuevoAsesorId
+            }));
+
+            console.log('📤 Reasignaciones a enviar:', reasignaciones);
+
+            this.disabled = true;
+            this.innerHTML = '<i class="icon-refresh spinning"></i> Reasignando clientes...';
+
+            fetch('reasignar_clientes.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({reasignaciones})
+            })
+            .then(r => r.text())
+            .then(text => {
+                console.log('📥 Respuesta del servidor:', text);
+
+                try {
+                    const data = JSON.parse(text);
+
+                    if (data.success) {
+                        console.log('✅ Reasignación grupal exitosa');
+                        procesoReasignacionCompletado = true;
+
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('reasignacionGrupoModal'));
+                        if (modal) {
+                            modal.hide();
+                            console.log('✅ Modal cerrado');
+                        }
+
+                        // 🆕 AHORA DAR DE BAJA AL EMPLEADO AUTOMÁTICAMENTE
+                        console.log('🔻 Procediendo a dar de baja al empleado...');
+                        this.innerHTML = '<i class="icon-refresh spinning"></i> Dando de baja empleado...';
+                        
+                        darDeBajaEmpleado();
+
+                    } else {
+                        console.error('❌ Error del servidor:', data.error);
+                        alert('❌ Error al reasignar clientes: ' + data.error);
+
+                        this.disabled = false;
+                        this.innerHTML = '<i class="icon-check"></i> Confirmar y Dar de Baja';
+                    }
+                } catch (e) {
+                    console.error('❌ Error al parsear JSON:', e);
+                    console.error('❌ Texto recibido:', text);
+                    alert('❌ Error: El servidor no devolvió una respuesta válida');
+
+                    this.disabled = false;
+                    this.innerHTML = '<i class="icon-check"></i> Confirmar y Dar de Baja';
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error en fetch:', error);
+                alert('❌ Error al conectar con el servidor: ' + error.message);
+
+                this.disabled = false;
+                this.innerHTML = '<i class="icon-check"></i> Confirmar y Dar de Baja';
+            });
+        });
+
+        // 2️⃣ CONFIRMAR REASIGNACIÓN INDIVIDUAL
+        document.getElementById('confirmarRedistribucion').addEventListener('click', function() {
+            console.log('🔄 [INDIVIDUAL] Botón confirmar clickeado');
+
+            const selects = document.querySelectorAll('.asesor-select-individual');
+            const reasignaciones = [];
+            let errores = [];
+
+            console.log('📊 Selects encontrados:', selects.length);
+
+            selects.forEach((select, index) => {
+                const clienteId = parseInt(select.dataset.clienteId);
+                const nuevoAsesorId = parseInt(select.value);
+
+                console.log(`  [${index}] Cliente ${clienteId} → Asesor ${nuevoAsesorId}`);
+
+                if (!nuevoAsesorId || nuevoAsesorId <= 0 || isNaN(nuevoAsesorId)) {
+                    errores.push(`Cliente #${clienteId}: No se seleccionó asesor`);
+                    select.classList.add('is-invalid');
+                } else {
+                    reasignaciones.push({
+                        cliente_id: clienteId,
+                        nuevo_asesor_id: nuevoAsesorId
+                    });
+                    select.classList.remove('is-invalid');
+                }
+            });
+
+            if (errores.length > 0) {
+                alert('⚠️ Por favor asigne un asesor a todos los clientes:\n\n' + errores.join('\n'));
+                console.error('❌ Errores de validación:', errores);
+                return;
+            }
+
+            if (reasignaciones.length === 0) {
+                alert('⚠️ No hay reasignaciones para procesar');
+                console.error('❌ Array de reasignaciones vacío');
+                return;
+            }
+
+            console.log('📤 Enviando:', reasignaciones);
+
+            this.disabled = true;
+            this.innerHTML = '<i class="icon-refresh spinning"></i> Reasignando clientes...';
+
+            fetch('reasignar_clientes.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({reasignaciones})
+            })
+            .then(r => r.text())
+            .then(text => {
+                console.log('📥 Respuesta:', text);
+                const data = JSON.parse(text);
+
+                if (data.success) {
+                    console.log('✅ Reasignación individual exitosa');
+                    procesoReasignacionCompletado = true;
+
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('redistribucionModal'));
+                    if (modal) modal.hide();
+
+                    // 🆕 AHORA DAR DE BAJA AL EMPLEADO AUTOMÁTICAMENTE
+                    console.log('🔻 Procediendo a dar de baja al empleado...');
+                    this.innerHTML = '<i class="icon-refresh spinning"></i> Dando de baja empleado...';
+                    
+                    darDeBajaEmpleado();
+
+                } else {
+                    alert('❌ Error: ' + data.error);
+                    this.disabled = false;
+                    this.innerHTML = '<i class="icon-check"></i> Confirmar Reasignación y Dar de Baja';
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                alert('❌ Error: ' + error.message);
+                this.disabled = false;
+                this.innerHTML = '<i class="icon-check"></i> Confirmar Reasignación y Dar de Baja';
+            });
+        });
+
+        console.log('✅ Event listeners registrados correctamente con proceso automático de baja');
+
+        // ============================================
+        // FUNCIONES DE PRESUPUESTO
+        // ============================================
+        
         function updatePresupuestoDropdown() {
             const selectedPuesto = ventaPuestoSelect.value;
             
-            // Clear current options
             presupuestoSelect.innerHTML = '<option value="">Seleccione un empleado</option>';
             
-            // Fetch employees based on selected puesto and sucursal
             fetch(`get_employees_by_puesto.php?puesto=${selectedPuesto}&sucursal=<?php echo urlencode($sucursal); ?>`)
                 .then(response => response.json())
                 .then(data => {
@@ -2114,86 +2124,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 .catch(error => console.error('Error:', error));
         }
 
-        // Function to create month rows
-        // Function to create month rows
-          // Function to create month rows
-          function createMonthRows(employeeId, puesto) {
-              presupuestoTableBody.innerHTML = '';
+        function createMonthRows(employeeId, puesto) {
+            presupuestoTableBody.innerHTML = '';
 
-              fetch(`get_meta_venta.php?id=${employeeId}&puesto=${puesto}`)
-                  .then(response => response.json())
-                  .then(response => {
-                      console.log('Respuesta:', response);
+            fetch(`get_meta_venta.php?id=${employeeId}&puesto=${puesto}`)
+                .then(response => response.json())
+                .then(response => {
+                    console.log('Respuesta:', response);
 
-                      if (!response.success) {
-                          throw new Error(response.error || 'Error al cargar los datos');
-                      }
+                    if (!response.success) {
+                        throw new Error(response.error || 'Error al cargar los datos');
+                    }
 
-                      // Create a map of existing meta values
-                      const metaMap = new Map();
-                      
-                      // CAMBIO: Solo llenamos el Map si hay datos
-                      if (response.data && response.data.length > 0) {
-
+                    const metaMap = new Map();
+                    
+                    if (response.data && response.data.length > 0) {
                         console.log('Datos encontrados:', response.data.length);
-                          response.data.forEach(item => {
-                              metaMap.set(item.mes, {
-                                  meta: item.meta,
-                                  meta_cero: item.meta_cero || 0
-                              });
-                          });
-                      }
+                        response.data.forEach(item => {
+                            metaMap.set(item.mes, {
+                                meta: item.meta,
+                                meta_cero: item.meta_cero || 0
+                            });
+                        });
+                    }
 
-                      // SIEMPRE creamos las 12 filas, aunque no haya datos guardados
-                      months.forEach((month, index) => {
-                          const row = document.createElement('tr');
-                          const mesNumero = index + 1;
-                          
-                          // Si no hay datos guardados, usamos valores vacíos por defecto
-                          const existingData = metaMap.get(mesNumero) || { meta: '', meta_cero: 0 };
-                          const isMetaCero = existingData.meta_cero == 1;
-                          
-                          row.innerHTML = `
-                              <td>${employeeId}</td>
-                              <td>
-                                  <input type="number" class="form-control meta-input" 
-                                        name="meta_mes_${mesNumero}" 
-                                        data-mes="${mesNumero}"
-                                        min="0" step="0.01" 
-                                        value="${existingData.meta}"
-                                        placeholder="0.00">
-                              </td>
-                              <td>${mesNumero}</td>
-                              <td>${month}</td>
-                              <td>
-                                  <div class="form-check">
-                                      <input class="form-check-input meta-cero-checkbox" 
-                                            type="checkbox" 
-                                            data-mes="${mesNumero}" 
-                                            id="metaCero${mesNumero}"
-                                            ${isMetaCero ? 'checked' : ''}>
-                                      <label class="form-check-label" for="metaCero${mesNumero}">
-                                          Meta en cero
-                                      </label>
-                                  </div>
-                              </td>
-                          `;
-                          presupuestoTableBody.appendChild(row);
-                      });
+                    months.forEach((month, index) => {
+                        const row = document.createElement('tr');
+                        const mesNumero = index + 1;
+                        
+                        const existingData = metaMap.get(mesNumero) || { meta: '', meta_cero: 0 };
+                        const isMetaCero = existingData.meta_cero == 1;
+                        
+                        row.innerHTML = `
+                            <td>${employeeId}</td>
+                            <td>
+                                <input type="number" class="form-control meta-input" 
+                                      name="meta_mes_${mesNumero}" 
+                                      data-mes="${mesNumero}"
+                                      min="0" step="0.01" 
+                                      value="${existingData.meta}"
+                                      placeholder="0.00">
+                            </td>
+                            <td>${mesNumero}</td>
+                            <td>${month}</td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input meta-cero-checkbox" 
+                                          type="checkbox" 
+                                          data-mes="${mesNumero}" 
+                                          id="metaCero${mesNumero}"
+                                          ${isMetaCero ? 'checked' : ''}>
+                                    <label class="form-check-label" for="metaCero${mesNumero}">
+                                        Meta en cero
+                                    </label>
+                                </div>
+                            </td>
+                        `;
+                        presupuestoTableBody.appendChild(row);
+                    });
 
-                      // Update header based on puesto
-                      idHeader.textContent = puesto === 'ASESOR' ? 'ID Asesor' : 'ID Coordinador';
-                  })
-                  .catch(error => {
-                      console.error('Error:', error);
-                      alert(error.message || 'Error al cargar los datos del presupuesto');
-                  });
-          }
+                    idHeader.textContent = puesto === 'ASESOR' ? 'ID Asesor' : 'ID Coordinador';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message || 'Error al cargar los datos del presupuesto');
+                });
+        }
 
-          
-
-
-        // Event listeners
+        // Event listeners de presupuesto
         ventaPuestoSelect.addEventListener('change', function() {
             updatePresupuestoDropdown();
             presupuestoTable.style.display = 'none';
@@ -2211,97 +2209,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
 
-        // Handle presupuesto form submission
-        // Handle presupuesto form submission
-          // Handle presupuesto form submission
-          // Handle presupuesto form submission
-              document.getElementById('asignar_presupuesto').addEventListener('click', function(e) {
-                  e.preventDefault();
-                  
-                  const selectedEmployeeId = presupuestoSelect.value;
-                  const selectedPuesto = ventaPuestoSelect.value;
-                  
-                  if (!selectedEmployeeId) {
-                      alert('Por favor seleccione un empleado');
-                      return;
-                  }
+        document.getElementById('asignar_presupuesto').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const selectedEmployeeId = presupuestoSelect.value;
+            const selectedPuesto = ventaPuestoSelect.value;
+            
+            if (!selectedEmployeeId) {
+                alert('Por favor seleccione un empleado');
+                return;
+            }
 
-                  const metas = [];
-                  const inputs = presupuestoTableBody.querySelectorAll('.meta-input');
-                  const checkboxes = presupuestoTableBody.querySelectorAll('.meta-cero-checkbox');
-                  
-                  inputs.forEach((input, index) => {
-                      const value = parseFloat(input.value) || 0;
-                      const metaCero = checkboxes[index].checked ? 1 : 0;
-                      
-                      if (value > 0) {
-                          metas.push({
-                              mes: index + 1,
-                              meta: value,
-                              nombre_mes: months[index],
-                              meta_cero: metaCero
-                          });
-                      }
-                  });
+            const metas = [];
+            const inputs = presupuestoTableBody.querySelectorAll('.meta-input');
+            const checkboxes = presupuestoTableBody.querySelectorAll('.meta-cero-checkbox');
+            
+            inputs.forEach((input, index) => {
+                const value = parseFloat(input.value) || 0;
+                const metaCero = checkboxes[index].checked ? 1 : 0;
+                
+                if (value > 0) {
+                    metas.push({
+                        mes: index + 1,
+                        meta: value,
+                        nombre_mes: months[index],
+                        meta_cero: metaCero
+                    });
+                }
+            });
 
-                  if (metas.length === 0) {
-                      alert('Por favor ingrese al menos un valor de meta');
-                      return;
-                  }
+            if (metas.length === 0) {
+                alert('Por favor ingrese al menos un valor de meta');
+                return;
+            }
 
-                  // Save meta data with improved error handling
-                  fetch('save_meta_venta.php', {
-                      method: 'POST',
-                      headers: {
-                          'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                          id: selectedEmployeeId,
-                          puesto: selectedPuesto,
-                          metas: metas
-                      })
-                  })
-                  .then(response => {
-                      // First, let's see what we actually got back
-                      console.log('Response status:', response.status);
-                      console.log('Response headers:', response.headers.get('content-type'));
-                      
-                      // Get the raw text first to see what's actually being returned
-                      return response.text().then(text => {
-                          console.log('Raw response:', text);
-                          
-                          // Try to parse it as JSON
-                          try {
-                              return JSON.parse(text);
-                          } catch (e) {
-                              console.error('Failed to parse JSON:', e);
-                              throw new Error('El servidor no devolvió una respuesta JSON válida. Respuesta: ' + text.substring(0, 200));
-                          }
-                      });
-                  })
-                  .then(response => {
-                      if (!response.success) {
-                          throw new Error(response.error || 'Error al guardar el presupuesto');
-                      }
-                      alert('Presupuesto guardado exitosamente');
-                      createMonthRows(selectedEmployeeId, selectedPuesto);
-                  })
-                  .catch(error => {
-                      console.error('Error completo:', error);
-                      alert(error.message || 'Error al guardar el presupuesto');
-                  });
-              });
+            fetch('save_meta_venta.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: selectedEmployeeId,
+                    puesto: selectedPuesto,
+                    metas: metas
+                })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+                
+                return response.text().then(text => {
+                    console.log('Raw response:', text);
+                    
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Failed to parse JSON:', e);
+                        throw new Error('El servidor no devolvió una respuesta JSON válida. Respuesta: ' + text.substring(0, 200));
+                    }
+                });
+            })
+            .then(response => {
+                if (!response.success) {
+                    throw new Error(response.error || 'Error al guardar el presupuesto');
+                }
+                alert('Presupuesto guardado exitosamente');
+                createMonthRows(selectedEmployeeId, selectedPuesto);
+            })
+            .catch(error => {
+                console.error('Error completo:', error);
+                alert(error.message || 'Error al guardar el presupuesto');
+            });
+        });
 
         // Initial load
         updatePresupuestoDropdown();
-      });
+     });
     </script>
+    
     
     <?php if (!$acceso): ?>
     <?php echo generarScriptDeshabilitarElementos(); ?>
     <?php endif; ?>
 
-
+    
   
 
   </body>
